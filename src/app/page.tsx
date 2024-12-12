@@ -3,6 +3,7 @@
 import { FormEventHandler } from 'react'
 import { useUpdateCall } from '@/lib/actor'
 import { useAuth } from '@ic-reactor/react'
+import { Button } from '@/components/ui/button'
 
 export default function Home() {
 	const {
@@ -40,9 +41,9 @@ export default function Home() {
 					name='name'
 					placeholder='name'
 				/>
-				<button className='bg-blue-500 px-3 font-semibold py-0.5 rounded-md text-white' disabled={loading}>
+				<Button className='bg-blue-500' disabled={loading}>
 					{loading ? 'loading' : 'greet'}
-				</button>
+				</Button>
 			</form>
 			{greet && !loading && <div>result: {greet}</div>}
 			<div>
@@ -52,13 +53,13 @@ export default function Home() {
 			</div>
 			{authenticated ? (
 				<div>
-					<button onClick={() => logout()}>Logout</button>
+					<Button onClick={() => logout()}>Logout</Button>
 				</div>
 			) : (
 				<div>
-					<button onClick={() => login()} disabled={authenticating}>
+					<Button onClick={() => login()} disabled={authenticating}>
 						Login
-					</button>
+					</Button>
 				</div>
 			)}
 		</main>
