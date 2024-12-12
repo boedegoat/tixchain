@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
+import ICPAgentProvider from '@/components/icp-agent-provider'
+import { ICPActorProvider } from '@/lib/actor'
 
 const geistSans = localFont({
 	src: './fonts/GeistVF.woff',
@@ -25,7 +27,11 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang='en'>
-			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+				<ICPAgentProvider withLocalEnv>
+					<ICPActorProvider loadingComponent={null}>{children}</ICPActorProvider>
+				</ICPAgentProvider>
+			</body>
 		</html>
 	)
 }
