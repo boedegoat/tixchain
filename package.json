@@ -12,7 +12,8 @@
 		"deploy:ledger": "chmod +x deploy-icp-ledger.sh && ./deploy-icp-ledger.sh",
 		"deploy:be": "npm run generate:be && dfx deploy backend",
 		"deploy:fe": "npm run build && dfx deploy frontend",
-		"deploy": "npm run deploy:deps && npm run deploy:ledger && npm run deploy:be && npm run deploy:fe"
+		"deploy": "npm run deploy:be && npm run deploy:fe",
+		"setup": "chmod +x setup-backend.sh && ./setup-backend.sh"
 	},
 	"dependencies": {
 		"@ic-reactor/parser": "^0.4.3",
