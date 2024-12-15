@@ -3,14 +3,14 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"prepare": "dfx deps init && dfx deps deploy",
+		"prepare": "",
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
-		"generate": "dfx generate backend",
-		"deploy:be": "npm run generate && dfx deploy backend",
-		"deploy": "npm run generate && npm run build && dfx deploy"
+		"generate:be": "dfx generate backend",
+		"deploy:be": "npm run generate:be && dfx deploy backend",
+		"deploy": "dfx deps init && dfx deps deploy && npm run generate:be && npm run build && dfx deploy"
 	},
 	"dependencies": {
 		"@ic-reactor/parser": "^0.4.3",

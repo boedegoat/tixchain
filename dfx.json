@@ -1,8 +1,12 @@
 {
 	"canisters": {
+		"internet-identity": {
+			"type": "pull",
+			"id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+		},
 		"backend": {
 			"type": "motoko",
-			"main": "backend/Backend.mo",
+			"main": "backend/Main.mo",
 			"declarations": {
 				"node_compatibility": true
 			}
@@ -11,10 +15,6 @@
 			"dependencies": ["backend"],
 			"source": ["out/"],
 			"type": "assets"
-		},
-		"internet-identity": {
-			"type": "pull",
-			"id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
 		}
 	},
 	"output_env_file": ".env"
