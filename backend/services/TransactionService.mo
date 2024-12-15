@@ -73,9 +73,9 @@ module TransactionService {
 
         switch (users.get(userId)) {
             case (null) { #err("User has no balance") };
-            case (?balance) {
+            case (?user) {
                 let totalAmount = amount + 10_000;
-                if (balance.balance < totalAmount) {
+                if (user.balance < totalAmount) {
                     return #err("Insufficient balance (including transaction fees)");
                 };
 

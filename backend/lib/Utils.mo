@@ -17,6 +17,6 @@ module Utils {
 
     // calculate 5% platform fee
     public func calculatePlatformFee(amount : Nat) : Nat {
-        return amount * (5 / 100);
+        return (amount * 5) / 100;
     };
 };

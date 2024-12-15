@@ -13,6 +13,7 @@ actor TixChain {
     private var users : Types.Users = HashMap.HashMap(0, Principal.equal, Principal.hash);
     private var events : Types.Events = HashMap.HashMap(0, Text.equal, Text.hash);
     private var tickets : Types.Tickets = HashMap.HashMap(0, Text.equal, Text.hash);
+    private var ticketSignatures : Types.TicketSignatures = HashMap.HashMap(0, Text.equal, Text.hash);
     private var transactions : Types.Transactions = HashMap.HashMap(0, Text.equal, Text.hash);
 
     private stable var usersEntries : [(Principal, Types.User)] = [];
@@ -90,12 +91,23 @@ actor TixChain {
         return await TicketService.createBuyTicketTx(caller, events, transactions, eventId);
     };
 
-    public shared ({ caller }) func finalizeBuyTicketTx(transactionId : Text, status : Types.TxStatus) : async Result.Result<Types.Transaction, Text> {
-        return await TicketService.finalizeBuyTicketTx(caller, users, platformBalance, tickets, transactions, transactionId, status);
+    public shared ({ caller }) func finalizeBuyTicketTx(
+        transactionId : Text, 
+        status : Types.TxStatus
+    ) : async Result.Result<Types.Transaction, Text> {
+        return await TicketService.finalizeBuyTicketTx(caller, users, platformBalance, tickets, events, transactions, transactionId, status);
     };
 
     public query func getTicketsBought(eventId : Text) : async Result.Result<[Types.Ticket], Text> {
         return TicketService.getTicketsBought(events, eventId, tickets);
+    };
+
+    public shared ({ caller }) func useTicket(ticketId : Text) : async Result.Result<Text, Text> {
+        return TicketService.useTicket(caller, events, tickets, ticketId, ticketSignatures);
+    };
+
+    public func scanTicketSignature(ticketSignature : Text) : async Result.Result<(), Text> {
+        return TicketService.scanTicketSignature(tickets, ticketSignatures, ticketSignature);
     };
 
     // === PLATFORMS ENDPOINT

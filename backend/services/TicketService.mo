@@ -11,6 +11,7 @@ import Int "mo:base/Int";
 import UserService "UserService";
 import Utils "../lib/Utils";
 import PlatformService "PlatformService";
+import TransactionService "TransactionService";
 
 module TicketService {
     public func createBuyTicketTx(
@@ -72,6 +73,7 @@ module TicketService {
         users : Types.Users,
         platformBalance : Types.PlatformBalance,
         tickets : Types.Tickets,
+        events : Types.Events,
         transactions : Types.Transactions,
         transactionId : Text,
         status : Types.TxStatus,
@@ -87,6 +89,13 @@ module TicketService {
             case (?transaction) {
                 if (transaction.txStatus == #completed or transaction.txStatus == #failed) {
                     return #err("Transaction already processed");
+                };
+
+                let eventId = switch (transaction.eventId) {
+                    case (null) {
+                        return #err("Missing transaction eventId");
+                    };
+                    case (?eventId) { eventId };
                 };
 
                 let updatedTransaction : Types.Transaction = {
@@ -112,23 +121,26 @@ module TicketService {
                             );
 
                             // create nft ticket
-                            let eventId = switch (transaction.eventId) {
-                                case (null) {
-                                    throw Error.reject("Missing transaction eventId");
-                                };
-                                case (?eventId) { eventId };
-                            };
-
                             let newTicketId = Utils.generateUUID(caller, transaction.id);
 
                             let newTicket : Types.Ticket = {
                                 id = newTicketId;
                                 owner = transaction.from;
                                 eventId = eventId;
+                                isUsed = false;
                                 createdAt = Time.now();
+                                updatedAt = null;
                             };
 
                             tickets.put(newTicketId, newTicket);
+
+                            // update event availableTicket
+                            switch (events.get(eventId)) {
+                                case (null) {};
+                                case (?event) {
+                                    events.put(eventId, { event with availableTickets = Nat.sub(event.availableTickets, 1) });
+                                };
+                            };
 
                             return #ok(updatedTransaction);
                         } catch (error) {
@@ -145,8 +157,7 @@ module TicketService {
                     };
                     case (#pending) {
                         return #err("Can't update to pending status");
-                    }
-
+                    };
                 };
             };
         };
@@ -177,4 +188,88 @@ module TicketService {
             };
         };
     };
+
+    public func useTicket(
+        caller : Principal,
+        events : Types.Events,
+        tickets : Types.Tickets,
+        ticketId : Text,
+        ticketSignatures : Types.TicketSignatures,
+    ) : Result.Result<Text, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        switch (tickets.get(ticketId)) {
+            case (null) {
+                return #err("Ticket not found");
+            };
+            case (?ticket) {
+                if (ticket.isUsed) {
+                    return #err("Ticket already used");
+                };
+
+                if (not Principal.equal(ticket.owner, caller)) {
+                    return #err("Only the owner who can use this ticket");
+                };
+
+                let eventId = ticket.eventId;
+
+                // check is event exist
+                switch (events.get(eventId)) {
+                    case (null) {
+                        return #err("Event Id not exist");
+                    };
+                    case _ {
+                        // create ticket signature
+                        let signature = Utils.generateUUID(caller, ticket.id # eventId);
+                        let newTicketSignature : Types.TicketSignature = {
+                            signature = signature;
+                            ticketId = ticket.id;
+                        };
+
+                        ticketSignatures.put(signature, newTicketSignature);
+                        return #ok(signature);
+                    };
+                };
+            };
+        };
+    };
+
+    public func scanTicketSignature(
+        tickets : Types.Tickets,
+        ticketSignatures : Types.TicketSignatures,
+        ticketSignature : Text,
+    ) : Result.Result<(), Text> {
+        switch (ticketSignatures.get(ticketSignature)) {
+            case (null) {
+                return #err("Invalid ticket signature");
+            };
+            case (?signature) {
+                let { ticketId } = signature;
+
+                switch (tickets.get(ticketId)) {
+                    case (null) {
+                        return #err("Ticket not found");
+                    };
+                    case (?ticket) {
+                        // update ticket isUsed
+                        let updatedTicket : Types.Ticket = {
+                            ticket with
+                            isUsed = true;
+                            updatedAt = ?Time.now();
+                        };
+                        tickets.put(ticket.id, updatedTicket);
+
+                        // delete ticket signature after valid use
+                        ticketSignatures.delete(ticketSignature);
+
+                        return #ok();
+                    };
+                };
+
+            };
+        };
+    };
+
 };

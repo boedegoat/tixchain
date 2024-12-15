@@ -16,6 +16,7 @@
 		"setup": "chmod +x setup-backend.sh && ./setup-backend.sh"
 	},
 	"dependencies": {
+		"@dfinity/ledger-icp": "^2.6.4",
 		"@ic-reactor/parser": "^0.4.3",
 		"@ic-reactor/react": "^1.14.6",
 		"@radix-ui/react-slot": "^1.1.0",

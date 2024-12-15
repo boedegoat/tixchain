@@ -58,7 +58,14 @@ module Types {
         id : Text;
         owner : Principal;
         eventId : Text;
+        isUsed : Bool;
         createdAt : Int;
+        updatedAt : ?Int;
+    };
+    public type TicketSignatures = HashMap.HashMap<Text, TicketSignature>;
+    public type TicketSignature = {
+        signature : Text;
+        ticketId : Text;
     };
 
     // TRANSACTION TYPES

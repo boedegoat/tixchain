@@ -4,6 +4,7 @@ import { FormEventHandler } from 'react'
 import { useUpdateCall } from '@/lib/actor'
 import { useAuth } from '@ic-reactor/react'
 import { Button } from '@/components/ui/button'
+import { getUserDepositAddress } from '@/lib/utils'
 
 export default function Home() {
 	const {
@@ -33,7 +34,7 @@ export default function Home() {
 
 	return (
 		<main className='p-10'>
-			<h1 className='font-bold text-4xl'>ICP Ticket</h1>
+			<h1 className='font-bold text-4xl'>TixChain</h1>
 			<form onSubmit={onSubmit} className='my-5 flex gap-2'>
 				<input
 					className='bg-transparent border border-gray-500 rounded-md p-0.5'
@@ -50,6 +51,7 @@ export default function Home() {
 				{loginLoading && <div>Loading...</div>}
 				{loginError ? <div>{JSON.stringify(loginError)}</div> : null}
 				{identity && <div>Principal ID: {principal?.toText()}</div>}
+				{principal && <div>Deposit Address : {getUserDepositAddress(principal)}</div>}
 			</div>
 			{authenticated ? (
 				<div>
