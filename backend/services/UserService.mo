@@ -3,6 +3,7 @@ import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
+import Nat "mo:base/Nat";
 import ledger "canister:icp_ledger_canister";
 
 module UserService {
@@ -10,7 +11,7 @@ module UserService {
         users : Types.Users,
         userId : Principal,
         username : Text,
-        name : ?Text,
+        depositAddress : Text,
     ) : Result.Result<Types.User, Text> {
         if (Text.size(username) < 3 or Text.size(username) > 20) {
             return #err("Username must be between 3 and 20 characters");
@@ -34,7 +35,9 @@ module UserService {
                 let newUser : Types.User = {
                     id = userId;
                     username = username;
-                    name = name;
+                    name = ?username;
+                    balance = 0;
+                    depositAddress = depositAddress;
                     createdAt = Time.now();
                     updatedAt = null;
                 };
@@ -89,24 +92,83 @@ module UserService {
                     };
                 };
 
+                let depositAddress = switch (updateUserData.depositAddress) {
+                    case (null) {
+                        user.depositAddress;
+                    };
+                    case (?newDepositAddress) {
+                        newDepositAddress;
+                    };
+                };
+
                 let updatedUser : Types.User = {
                     user with
                     username = username;
                     name = name;
+                    depositAddress = depositAddress;
                     updatedAt = ?Time.now();
                 };
 
                 users.put(userId, updatedUser);
-                #ok(updatedUser);
+                return #ok(updatedUser);
             };
         };
     };
 
-    public func getBalance(principalId : Principal) : async Nat {
+    public func getLedgerBalance(principalId : Principal) : async Nat {
         let balance = await ledger.icrc1_balance_of({
             owner = principalId;
             subaccount = null;
         });
         return balance;
+    };
+
+    public func getAppBalance(users : Types.Users, caller : Principal) : Nat {
+        switch (users.get(caller)) {
+            case (null) {
+                return 0;
+            };
+            case (?user) {
+                return user.balance;
+            };
+        };
+    };
+
+    public func updateUserBalance(
+        users : Types.Users,
+        userId : Principal,
+        amount : Nat,
+        updateType : { #add; #sub },
+    ) : Result.Result<(), Text> {
+        let currentUser = users.get(userId);
+
+        switch (currentUser, updateType) {
+            case (null, _) {
+                return #err("User not found");
+            };
+            case (?user, #sub) {
+                if (user.balance < amount) {
+                    return #err("Insufficient balance");
+                };
+
+                let updatedUser = {
+                    user with
+                    balance = Nat.sub(user.balance, amount);
+                };
+
+                users.put(userId, updatedUser);
+                // Log the withdrawal event
+                return #ok();
+
+            };
+            case (?user, #add) {
+                let updatedUser = {
+                    user with
+                    balance = Nat.add(user.balance, amount);
+                };
+                users.put(userId, updatedUser);
+                return #ok();
+            };
+        };
     };
 };

@@ -7,8 +7,8 @@ import Utils "../lib/Utils";
 
 module EventService {
     public func createEvent(
-        events : Types.Events,
         caller : Principal,
+        events : Types.Events,
         createEventData : Types.CreateEventData,
     ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
@@ -63,8 +63,8 @@ module EventService {
     };
 
     public func updateEvent(
-        events : Types.Events,
         caller : Principal,
+        events : Types.Events,
         eventId : Text,
         updateEventData : Types.UpdateEventData,
     ) : Result.Result<Types.Event, Text> {
@@ -139,8 +139,8 @@ module EventService {
     };
 
     public func deleteEvent(
-        events : Types.Events,
         caller : Principal,
+        events : Types.Events,
         eventId : Text,
     ) : Result.Result<(), Text> {
         if (Principal.isAnonymous(caller)) {

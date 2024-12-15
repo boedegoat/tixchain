@@ -1,5 +1,3 @@
-'use client'
-
 import { createActorContext } from '@ic-reactor/react'
 import { backend, idlFactory } from '@/declarations/backend'
 

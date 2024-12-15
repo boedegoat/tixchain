@@ -8,12 +8,15 @@ module Types {
         id : Principal;
         username : Text;
         name : ?Text;
+        balance : Nat;
+        depositAddress : Text;
         createdAt : Int;
         updatedAt : ?Int;
     };
     public type UpdateUserData = {
         username : ?Text;
         name : ?Text;
+        depositAddress : ?Text;
     };
 
     // EVENT TYPES
@@ -49,6 +52,15 @@ module Types {
         imageUrl : ?Text;
     };
 
+    // NFT TICKET TYPES
+    public type Tickets = HashMap.HashMap<Text, Ticket>;
+    public type Ticket = {
+        id : Text;
+        owner : Principal;
+        eventId : Text;
+        createdAt : Int;
+    };
+
     // TRANSACTION TYPES
     public type Transactions = HashMap.HashMap<Text, Transaction>;
     public type Transaction = {
@@ -56,10 +68,17 @@ module Types {
         from : Principal;
         to : Principal;
         amount : Nat;
+        transactionType : TransactionType;
         txStatus : TxStatus;
         eventId : ?Text;
         platformFee : Nat;
         createdAt : Int;
+        updatedAt : ?Int;
+    };
+    public type TransactionType = {
+        #buyTicket;
+        #buyResellTicket;
+        #withdrawal;
     };
     public type TxStatus = {
         #pending;
