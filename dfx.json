@@ -4,12 +4,23 @@
 			"type": "pull",
 			"id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
 		},
+		"icp_ledger_canister": {
+			"type": "custom",
+			"candid": "icp_ledger.did",
+			"wasm": "https://download.dfinity.systems/ic/5d202894864f4db4a5a46f44422aebc80c3d321b/canisters/ledger-canister.wasm.gz",
+			"remote": {
+				"id": {
+					"ic": "ryjl3-tyaaa-aaaaa-aaaba-cai"
+				}
+			}
+		},
 		"backend": {
 			"type": "motoko",
 			"main": "backend/Main.mo",
 			"declarations": {
 				"node_compatibility": true
-			}
+			},
+			"dependencies": ["icp_ledger_canister"]
 		},
 		"frontend": {
 			"dependencies": ["backend"],

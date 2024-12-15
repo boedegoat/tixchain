@@ -10,19 +10,30 @@ import EventService "services/EventService";
 actor TixChain {
     private var users : Types.Users = HashMap.HashMap(0, Principal.equal, Principal.hash);
     private var events : Types.Events = HashMap.HashMap(0, Text.equal, Text.hash);
+    private var transactions : Types.Transactions = HashMap.HashMap(0, Text.equal, Text.hash);
 
     private stable var usersEntries : [(Principal, Types.User)] = [];
     private stable var eventsEntries : [(Text, Types.Event)] = [];
+    private stable var transactionsEntries : [(Text, Types.Transaction)] = [];
+    private stable var platformBalance : Types.PlatformBalance = {
+        var balance : Nat = 0;
+        var totalFees : Nat = 0;
+    };
 
     // PRE UPGRADE AND POST UPGRADE
     system func preupgrade() {
         usersEntries := Iter.toArray(users.entries());
         eventsEntries := Iter.toArray(events.entries());
+        transactionsEntries := Iter.toArray(transactions.entries());
     };
 
     system func postupgrade() {
         users := HashMap.fromIter(usersEntries.vals(), 0, Principal.equal, Principal.hash);
+        usersEntries := [];
         events := HashMap.fromIter(eventsEntries.vals(), 0, Text.equal, Text.hash);
+        eventsEntries := [];
+        transactions := HashMap.fromIter(transactionsEntries.vals(), 0, Text.equal, Text.hash);
+        transactionsEntries := [];
     };
 
     // USERS ENDPOINT
@@ -36,6 +47,10 @@ actor TixChain {
 
     public shared ({ caller }) func whoami(): async ?Types.User {
         return users.get(caller);
+    };
+
+    public shared ({ caller }) func getBalance() : async Nat {
+        return await UserService.getBalance(caller);
     };
 
     // EVENTS ENDPOINT
@@ -57,6 +72,15 @@ actor TixChain {
 
     public func getEvent(eventId : Text) : async ?Types.Event {
         return events.get(eventId);
+    };
+
+    // PLATFORMS ENDPOINT
+    public func getPlatformBalance() : async Nat {
+        platformBalance.balance;
+    };
+
+    public func getPlatformTotalFees() : async Nat {
+        platformBalance.totalFees;
     };
     
     // JUST FOR FUN FUNCTIONS :)

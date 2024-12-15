@@ -3,14 +3,16 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"prepare": "",
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
 		"generate:be": "dfx generate backend",
+		"deploy:deps": "dfx deps init && dfx deps deploy",
+		"deploy:ledger": "chmod +x deploy-icp-ledger.sh && ./deploy-icp-ledger.sh",
 		"deploy:be": "npm run generate:be && dfx deploy backend",
-		"deploy": "dfx deps init && dfx deps deploy && npm run generate:be && npm run build && dfx deploy"
+		"deploy:fe": "npm run build && dfx deploy frontend",
+		"deploy": "npm run deploy:deps && npm run deploy:ledger && npm run deploy:be && npm run deploy:fe"
 	},
 	"dependencies": {
 		"@ic-reactor/parser": "^0.4.3",

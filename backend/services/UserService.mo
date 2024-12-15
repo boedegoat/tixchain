@@ -3,6 +3,7 @@ import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
+import ledger "canister:icp_ledger_canister";
 
 module UserService {
     public func authenticateUser(
@@ -99,5 +100,13 @@ module UserService {
                 #ok(updatedUser);
             };
         };
+    };
+
+    public func getBalance(principalId : Principal) : async Nat {
+        let balance = await ledger.icrc1_balance_of({
+            owner = principalId;
+            subaccount = null;
+        });
+        return balance;
     };
 };

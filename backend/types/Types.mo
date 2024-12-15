@@ -49,4 +49,27 @@ module Types {
         imageUrl : ?Text;
     };
 
+    // TRANSACTION TYPES
+    public type Transactions = HashMap.HashMap<Text, Transaction>;
+    public type Transaction = {
+        id : Text;
+        from : Principal;
+        to : Principal;
+        amount : Nat;
+        txStatus : TxStatus;
+        eventId : ?Text;
+        platformFee : Nat;
+        createdAt : Int;
+    };
+    public type TxStatus = {
+        #pending;
+        #completed;
+        #failed;
+    };
+
+    // PLATFORM TYPES
+    public type PlatformBalance = {
+        var balance : Nat;
+        var totalFees : Nat;
+    };
 };

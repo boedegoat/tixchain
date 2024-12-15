@@ -2,11 +2,9 @@
 
 ## Starting Local Server
 
-1. `dfx start --clean`
-2. `dfx generate backend`
-3. setup `.env`, add `NEXT_PUBLIC_CANISTER_ID_BACKEND` set it to match `CANISTER_ID_BACKEND`
-4. `npm i && npm run build`
-5. `dfx deploy`
+1. setup `.env`, add `NEXT_PUBLIC_CANISTER_ID_BACKEND` set it to match `CANISTER_ID_BACKEND`
+2. `npm install`
+3. `npm run deploy`
 
 ## Starting Frontend Dev Server
 
