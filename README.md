@@ -1,4 +1,4 @@
-# Next.js ICP Template
+# TixChain
 
 ## Getting Started
 
@@ -8,7 +8,7 @@
 
 ## Starting Frontend Dev Server
 
-Follows the same steps as above, then run:
+Follows the same steps on the [Getting Started](#getting-started) section, then run:
 
 ```bash
 npm run dev
