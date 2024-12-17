@@ -3,6 +3,7 @@
 ## Getting Started
 
 1. `dfx start --clean --background`
+1. `dfx deps pull`
 1. `npm install`
 1. `npm run setup`
 
