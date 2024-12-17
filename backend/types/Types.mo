@@ -1,5 +1,6 @@
 import HashMap "mo:base/HashMap";
 import Principal "mo:base/Principal";
+import List "mo:base/List";
 
 module Types {
     // USER TYPES
@@ -24,14 +25,29 @@ module Types {
     public type Event = {
         id : Text;
         owner : Principal;
+        admins : List.List<Principal>;
         title : Text;
         description : Text;
         date : Text;
+        startsAt : Int;
+        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
         availableTickets : Nat;
+        resellMaxPricePercent : Nat;
         imageUrl : ?Text;
+        createdAt : Int;
+        updatedAt : ?Int;
+    };
+    public type ReselledEvents = HashMap.HashMap<Text, ReselledEvent>;
+    public type ReselledEvent = {
+        id : Text;
+        eventId : Text;
+        owner : Principal;
+        ticketPrice : Nat;
+        totalTickets : Nat;
+        availableTickets : Nat;
         createdAt : Int;
         updatedAt : ?Int;
     };
@@ -39,17 +55,27 @@ module Types {
         title : Text;
         description : Text;
         date : Text;
+        startsAt : Int;
+        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
+        resellMaxPricePercent : Nat;
         imageUrl : ?Text;
     };
     public type UpdateEventData = {
+        admins : ?List.List<Principal>;
         title : ?Text;
         description : ?Text;
         date : ?Text;
+        startsAt : ?Int;
+        endsAt : ?Int;
         location : ?Text;
         imageUrl : ?Text;
+    };
+    public type CreateResellEventData = {
+        ticketPrice : Nat;
+        totalTickets : Nat;
     };
 
     // NFT TICKET TYPES
@@ -66,6 +92,7 @@ module Types {
     public type TicketSignature = {
         signature : Text;
         ticketId : Text;
+        expiresAt : Int;
     };
 
     // TRANSACTION TYPES

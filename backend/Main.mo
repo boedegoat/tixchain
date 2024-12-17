@@ -70,9 +70,9 @@ actor TixChain {
         return EventService.createEvent(caller, events, createEventData);
     };
 
-    public shared ({ caller }) func updateEvent(eventId : Text, updateEventData: Types.UpdateEventData) : async Result.Result<Types.Event, Text> {
-        return EventService.updateEvent(caller, events, eventId, updateEventData);
-    };
+    // public shared ({ caller }) func updateEvent(eventId : Text, updateEventData: Types.UpdateEventData) : async Result.Result<Types.Event, Text> {
+    //     return EventService.updateEvent(caller, events, eventId, updateEventData);
+    // };
 
     public shared ({ caller }) func deleteEvent(eventId : Text) : async Result.Result<(), Text> {
         return EventService.deleteEvent(caller, events, eventId);
@@ -106,8 +106,8 @@ actor TixChain {
         return TicketService.useTicket(caller, events, tickets, ticketId, ticketSignatures);
     };
 
-    public func scanTicketSignature(ticketSignature : Text) : async Result.Result<(), Text> {
-        return TicketService.scanTicketSignature(tickets, ticketSignatures, ticketSignature);
+    public shared ({ caller }) func scanTicketSignature(eventId : Text, ticketSignature : Text) : async Result.Result<(), Text> {
+        return TicketService.scanTicketSignature(caller, events, eventId, tickets, ticketSignatures, ticketSignature);
     };
 
     // === PLATFORMS ENDPOINT

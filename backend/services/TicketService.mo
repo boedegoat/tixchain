@@ -8,10 +8,10 @@ import Buffer "mo:base/Buffer";
 import Array "mo:base/Array";
 import Order "mo:base/Order";
 import Int "mo:base/Int";
+import List "mo:base/List";
 import UserService "UserService";
 import Utils "../lib/Utils";
 import PlatformService "PlatformService";
-import TransactionService "TransactionService";
 
 module TicketService {
     public func createBuyTicketTx(
@@ -189,6 +189,65 @@ module TicketService {
         };
     };
 
+    public func getMyTickets(caller : Principal, tickets : Types.Tickets) : Result.Result<[Types.Ticket], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        let ticketsArray = Buffer.Buffer<Types.Ticket>(0);
+
+        for ((_, ticket) in tickets.entries()) {
+            if (Principal.equal(ticket.owner, caller)) {
+                ticketsArray.add(ticket);
+            };
+        };
+
+        let sorted = Array.sort(
+            Buffer.toArray(ticketsArray),
+            func(a : Types.Ticket, b : Types.Ticket) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
+    public func getMyTicketsByEventId(
+        caller : Principal,
+        tickets : Types.Tickets,
+        events : Types.Events,
+        eventId : Text,
+    ) : Result.Result<[Types.Ticket], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        switch (events.get(eventId)) {
+            case (null) {
+                return #err("Event not found");
+            };
+            case (?event) {
+                let ticketsArray = Buffer.Buffer<Types.Ticket>(0);
+
+                for ((_, ticket) in tickets.entries()) {
+                    if (Principal.equal(ticket.owner, caller) and ticket.eventId == event.id) {
+                        ticketsArray.add(ticket);
+                    };
+                };
+
+                let sorted = Array.sort(
+                    Buffer.toArray(ticketsArray),
+                    func(a : Types.Ticket, b : Types.Ticket) : Order.Order {
+                        Int.compare(b.createdAt, a.createdAt);
+                    },
+                );
+
+                return #ok(sorted);
+            };
+        };
+
+    };
+
     public func useTicket(
         caller : Principal,
         events : Types.Events,
@@ -226,6 +285,7 @@ module TicketService {
                         let newTicketSignature : Types.TicketSignature = {
                             signature = signature;
                             ticketId = ticket.id;
+                            expiresAt = Time.now() + 60_000_000_000; // expires after 1 minute
                         };
 
                         ticketSignatures.put(signature, newTicketSignature);
@@ -237,39 +297,62 @@ module TicketService {
     };
 
     public func scanTicketSignature(
+        caller : Principal,
+        events : Types.Events,
+        eventId : Text,
         tickets : Types.Tickets,
         ticketSignatures : Types.TicketSignatures,
         ticketSignature : Text,
     ) : Result.Result<(), Text> {
-        switch (ticketSignatures.get(ticketSignature)) {
+        switch (events.get(eventId)) {
             case (null) {
-                return #err("Invalid ticket signature");
+                return #err("Event not found");
             };
-            case (?signature) {
-                let { ticketId } = signature;
-
-                switch (tickets.get(ticketId)) {
-                    case (null) {
-                        return #err("Ticket not found");
-                    };
-                    case (?ticket) {
-                        // update ticket isUsed
-                        let updatedTicket : Types.Ticket = {
-                            ticket with
-                            isUsed = true;
-                            updatedAt = ?Time.now();
-                        };
-                        tickets.put(ticket.id, updatedTicket);
-
-                        // delete ticket signature after valid use
-                        ticketSignatures.delete(ticketSignature);
-
-                        return #ok();
-                    };
+            case (?event) {
+                let isAdmin = switch (List.find<Principal>(event.admins, func admin { Principal.equal(admin, caller) })) {
+                    case (null) false;
+                    case _ true;
                 };
 
+                // if not owner and not admin
+                if (not Principal.equal(event.owner, caller) and not isAdmin) {
+                    return #err("Only event owner or admin who can scan ticket");
+                };
+
+                switch (ticketSignatures.get(ticketSignature)) {
+                    case (null) {
+                        return #err("Invalid ticket signature");
+                    };
+                    case (?signature) {
+                        let { ticketId } = signature;
+
+                        if (Time.now() > signature.expiresAt) {
+                            return #err("Ticket signature already expired, please regenerate new");
+                        };
+
+                        switch (tickets.get(ticketId)) {
+                            case (null) {
+                                return #err("Ticket not found");
+                            };
+                            case (?ticket) {
+                                // update ticket isUsed
+                                let updatedTicket : Types.Ticket = {
+                                    ticket with
+                                    isUsed = true;
+                                    updatedAt = ?Time.now();
+                                };
+                                tickets.put(ticket.id, updatedTicket);
+
+                                // delete ticket signature after valid use
+                                ticketSignatures.delete(ticketSignature);
+
+                                return #ok();
+                            };
+                        };
+
+                    };
+                };
             };
         };
     };
-
 };
