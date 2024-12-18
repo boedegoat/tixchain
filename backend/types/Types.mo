@@ -11,6 +11,7 @@ module Types {
         name : ?Text;
         balance : Nat;
         depositAddress : Text;
+        imageUrl : Text;
         createdAt : Int;
         updatedAt : ?Int;
     };
