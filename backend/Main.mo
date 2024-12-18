@@ -45,8 +45,8 @@ actor TixChain {
     };
 
     // === USERS ENDPOINT
-    public shared ({ caller }) func authenticateUser(username: Text, depositAddress : Text) : async Result.Result<Types.User, Text> {
-        return UserService.authenticateUser(users, caller, username, depositAddress);
+    public shared ({ caller }) func authenticateUser(username: Text, depositAddress : Text, imageUrl : Text) : async Result.Result<Types.User, Text> {
+        return UserService.authenticateUser(users, caller, username, depositAddress, imageUrl);
     };
 
     public shared ({ caller }) func updateUser(updateUserData: Types.UpdateUserData) : async Result.Result<Types.User, Text> {

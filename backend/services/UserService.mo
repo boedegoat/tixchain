@@ -12,6 +12,7 @@ module UserService {
         userId : Principal,
         username : Text,
         depositAddress : Text,
+        imageUrl : Text,
     ) : Result.Result<Types.User, Text> {
         if (Text.size(username) < 3 or Text.size(username) > 20) {
             return #err("Username must be between 3 and 20 characters");
@@ -38,6 +39,7 @@ module UserService {
                     name = ?username;
                     balance = 0;
                     depositAddress = depositAddress;
+                    imageUrl = imageUrl;
                     createdAt = Time.now();
                     updatedAt = null;
                 };
