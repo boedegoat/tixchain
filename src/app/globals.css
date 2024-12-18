@@ -37,6 +37,6 @@
 		@apply border-border;
 	}
 	body {
-		@apply bg-[#181818] text-foreground;
+		@apply bg-[#181818] text-white;
 	}
 }

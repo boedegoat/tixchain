@@ -10,6 +10,9 @@ export default {
 	theme: {
 		extend: {
 			colors: {
+				tixchain: {
+					accent: '#A5E5D1',
+				},
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				card: {

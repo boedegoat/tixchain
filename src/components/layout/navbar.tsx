@@ -6,7 +6,7 @@ import { useAuth } from '@ic-reactor/react'
 import Link from 'next/link'
 import { Avatar, AvatarImage } from '../ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ChevronDown, LogOut, User } from 'lucide-react'
+import { ChevronDown, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
 
 export default function Navbar() {
@@ -46,7 +46,7 @@ export default function Navbar() {
 							disabled={authenticating}
 							className='rounded-[10px] bg-[#D9D9D9] px-4 py-[10px] flex text-black font-bold'
 						>
-							<img src='/icons/sign-in.svg' alt='sign in' className='mr-[19px]' />
+							<LogInIcon className='mr-[19px]' />
 							Sign In
 						</button>
 					)}
