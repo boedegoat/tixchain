@@ -20,6 +20,10 @@ export default function RootLayout({
 			<body className={`${dmSans.variable} font-sans antialiased`}>
 				<ICPAgentProvider withLocalEnv>
 					<ICPActorProvider loadingComponent={null}>
+						<div className='absolute pointer-events-none w-[618px] h-[791px] rotate-[90deg] rounded-[791px] opacity-[0.87] [background:linear-gradient(180deg,#A5E5D1_-11.06%,#3ECA9E_88.94%)] [filter:blur(100px)_drop-shadow(0px_4px_4px_rgba(0,0,0,0.25))] left-[17%] -top-[86%]'></div>
+						<div className='absolute pointer-events-none w-[618px] h-[791px] rotate-[90deg] rounded-[791px] opacity-[0.87] [background:linear-gradient(180deg,#FFF_0%,#37876E_100%)] [filter:blur(100px)] [box-shadow:0px_4px_4px_0px_rgba(0,0,0,0.25)] left-[40%] -top-[86%]'></div>
+						<div className='absolute pointer-events-none w-[618px] h-[791px] rotate-[90deg] rounded-[791px] opacity-[0.2] [background:linear-gradient(180deg,#FFF_0%,#37876E_100%)] blur-[90px] -left-[48%]'></div>
+						<div className='absolute pointer-events-none w-[618px] h-[791px] rotate-[90deg] rounded-[791px] opacity-[0.2] [background:linear-gradient(180deg,#FFF_0%,#37876E_100%)] blur-[90px] -right-[46%]'></div>
 						<main>
 							<Navbar />
 							{children}
