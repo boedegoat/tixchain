@@ -5,8 +5,11 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import List "mo:base/List";
 import Nat "mo:base/Nat";
+import Nat64 "mo:base/Nat64";
 import Utils "../lib/Utils";
 import TicketService "TicketService";
+import TransactionService "TransactionService";
+import PlatformService "PlatformService";
 
 module EventService {
     public func createEvent(
@@ -28,7 +31,7 @@ module EventService {
             ticketPrice;
             totalTickets;
             imageUrl;
-            resellMaxPricePercent;
+            resellMaxPrice;
         } = createEventData;
 
         if (Text.size(title) < 3 or Text.size(title) > 100) {
@@ -47,8 +50,8 @@ module EventService {
             return #err("Total tickets can't be negative");
         };
 
-        if (resellMaxPricePercent < 0 or resellMaxPricePercent > 200) {
-            return #err("Resell max price percent can't over 200%");
+        if (resellMaxPrice < ticketPrice) {
+            return #err("Resell max price can't lower than ticket price");
         };
 
         let newEventId = Utils.generateUUID(caller, description);
@@ -66,7 +69,7 @@ module EventService {
             ticketPrice = ticketPrice;
             totalTickets = totalTickets;
             availableTickets = totalTickets;
-            resellMaxPricePercent = resellMaxPricePercent;
+            resellMaxPrice = resellMaxPrice;
             imageUrl = imageUrl;
             createdAt = Time.now();
             updatedAt = null;
@@ -93,13 +96,11 @@ module EventService {
                 return #err("Event not found");
             };
             case (?event) {
-                let { resellMaxPricePercent; description } = event;
+                let { resellMaxPrice; description } = event;
                 let { ticketPrice; totalTickets } = createResellEventData;
 
-                let maxPrice = event.ticketPrice + event.ticketPrice * resellMaxPricePercent / 100;
-
-                if (ticketPrice > maxPrice) {
-                    return #err("Ticket price exceeds resell percentage limit of " # Nat.toText(resellMaxPricePercent) # "%");
+                if (ticketPrice > resellMaxPrice) {
+                    return #err("Ticket price exceeds resell max price limit of " # Nat.toText(resellMaxPrice));
                 };
 
                 switch (TicketService.getMyTicketsByEventId(caller, tickets, events, eventId)) {
@@ -132,97 +133,12 @@ module EventService {
 
     };
 
-    // public func updateEvent(
-    //     caller : Principal,
-    //     events : Types.Events,
-    //     eventId : Text,
-    //     updateEventData : Types.UpdateEventData,
-    // ) : Result.Result<Types.Event, Text> {
-    //     if (Principal.isAnonymous(caller)) {
-    //         return #err("Anonymous principals are not allowed");
-    //     };
-
-    //     switch (events.get(eventId)) {
-    //         case (null) {
-    //             return #err("Event not found");
-    //         };
-    //         case (?event) {
-    //             if (not Principal.equal(event.owner, caller)) {
-    //                 return #err("Only the owner who can update this event");
-    //             };
-
-    //             let admins = switch (updateEventData.admins) {
-    //                 case (null) {
-    //                     event.admins;
-    //                 };
-    //                 case (?newAdmins) {
-    //                     newAdmins;
-    //                 };
-    //             };
-
-    //             let title = switch (updateEventData.title) {
-    //                 case (null) {
-    //                     event.title;
-    //                 };
-    //                 case (?newTitle) {
-    //                     if (Text.size(newTitle) < 3 or Text.size(newTitle) > 100) {
-    //                         return #err("Title must be between 3 and 100 characters");
-    //                     };
-    //                     newTitle;
-    //                 };
-    //             };
-
-    //             let description = switch (updateEventData.description) {
-    //                 case (null) {
-    //                     event.description;
-    //                 };
-    //                 case (?newDescription) {
-    //                     if (newDescription == "" or Text.size(newDescription) > 1000) {
-    //                         return #err("Description must be between 1 and 1000 characters");
-    //                     };
-    //                     newDescription;
-    //                 };
-    //             };
-
-    //             let date = switch (updateEventData.date) {
-    //                 case (null) {
-    //                     event.date;
-    //                 };
-    //                 case (?newDate) {
-    //                     newDate;
-    //                 };
-    //             };
-
-    //             let location = switch (updateEventData.location) {
-    //                 case (null) {
-    //                     event.location;
-    //                 };
-    //                 case (?newLocation) {
-    //                     newLocation;
-    //                 };
-    //             };
-
-    //             let updatedEvent : Types.Event = {
-    //                 event with
-    //                 admins = admins;
-    //                 title = title;
-    //                 description = description;
-    //                 date = date;
-    //                 location = location;
-    //                 updatedAt = ?Time.now();
-    //             };
-
-    //             events.put(event.id, updatedEvent);
-    //             return #ok(updatedEvent);
-    //         };
-    //     };
-    // };
-
-    public func deleteEvent(
+    public func updateEvent(
         caller : Principal,
         events : Types.Events,
         eventId : Text,
-    ) : Result.Result<(), Text> {
+        updateEventData : Types.UpdateEventData,
+    ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
         };
@@ -235,9 +151,72 @@ module EventService {
                 if (not Principal.equal(event.owner, caller)) {
                     return #err("Only the owner who can update this event");
                 };
-                // TODO: add logic for refunding tickets
-                events.delete(eventId);
-                return #ok(());
+
+                let admins = switch (updateEventData.admins) {
+                    case (null) {
+                        event.admins;
+                    };
+                    case (?newAdmins) {
+                        newAdmins;
+                    };
+                };
+
+                let imageUrl = switch (updateEventData.imageUrl) {
+                    case (null) {
+                        event.imageUrl;
+                    };
+                    case (?newImageUrl) {
+                        ?newImageUrl;
+                    };
+                };
+
+                let updatedEvent : Types.Event = {
+                    event with
+                    admins = admins;
+                    imageUrl = imageUrl;
+                    updatedAt = ?Time.now();
+                };
+
+                events.put(event.id, updatedEvent);
+                return #ok(updatedEvent);
+            };
+        };
+    };
+
+    public func deleteEvent(
+        caller : Principal,
+        platformBalance : Types.PlatformBalance,
+        tickets : Types.Tickets,
+        events : Types.Events,
+        eventId : Text,
+    ) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        switch (events.get(eventId)) {
+            case (null) {
+                return #err("Event not found");
+            };
+            case (?event) {
+                if (not Principal.equal(event.owner, caller)) {
+                    return #err("Only the owner who can update this event");
+                };
+
+                switch (TicketService.getTicketsBought(events, eventId, tickets)) {
+                    case (#err(msg)) {
+                        return #err(msg);
+                    };
+                    case (#ok(eventTickets)) {
+                        let platformFee = Utils.calculatePlatformFee(event.ticketPrice);
+                        for (ticket in eventTickets.vals()) {
+                            ignore await TransactionService.transfer(Nat64.fromNat(event.ticketPrice), ticket.owner);
+                            ignore PlatformService.updatePlatformBalance(platformBalance, Nat.sub(event.ticketPrice, platformFee), platformFee, #sub);
+                        };
+                        events.delete(eventId);
+                        return #ok(());
+                    };
+                };
             };
         };
     };

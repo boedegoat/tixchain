@@ -70,12 +70,12 @@ actor TixChain {
         return EventService.createEvent(caller, events, createEventData);
     };
 
-    // public shared ({ caller }) func updateEvent(eventId : Text, updateEventData: Types.UpdateEventData) : async Result.Result<Types.Event, Text> {
-    //     return EventService.updateEvent(caller, events, eventId, updateEventData);
-    // };
+    public shared ({ caller }) func updateEvent(eventId : Text, updateEventData: Types.UpdateEventData) : async Result.Result<Types.Event, Text> {
+        return EventService.updateEvent(caller, events, eventId, updateEventData);
+    };
 
     public shared ({ caller }) func deleteEvent(eventId : Text) : async Result.Result<(), Text> {
-        return EventService.deleteEvent(caller, events, eventId);
+        return await EventService.deleteEvent(caller, platformBalance, tickets, events, eventId);
     };
 
     public func getAllEvents() : async [Types.Event] {

@@ -36,7 +36,7 @@ module Types {
         ticketPrice : Nat;
         totalTickets : Nat;
         availableTickets : Nat;
-        resellMaxPricePercent : Nat;
+        resellMaxPrice : Nat;
         imageUrl : ?Text;
         createdAt : Int;
         updatedAt : ?Int;
@@ -61,17 +61,11 @@ module Types {
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
-        resellMaxPricePercent : Nat;
+        resellMaxPrice : Nat;
         imageUrl : ?Text;
     };
     public type UpdateEventData = {
         admins : ?List.List<Principal>;
-        title : ?Text;
-        description : ?Text;
-        date : ?Text;
-        startsAt : ?Int;
-        endsAt : ?Int;
-        location : ?Text;
         imageUrl : ?Text;
     };
     public type CreateResellEventData = {
