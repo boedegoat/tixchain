@@ -8,6 +8,7 @@ import { Avatar, AvatarImage } from '../ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ChevronDown, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
+import { useRouter } from 'next/navigation'
 
 export default function Navbar() {
 	const { call: whoami } = useUpdateCall({
@@ -17,6 +18,7 @@ export default function Navbar() {
 		functionName: 'whoami',
 		refetchOnMount: true,
 	})
+	const router = useRouter()
 
 	const { login, logout, authenticating, authenticated } = useAuth({
 		async onLoginSuccess(principal) {
@@ -25,7 +27,8 @@ export default function Navbar() {
 			const image = generateImageFromUsername(username)
 			const result = await authenticateUser([username, depositAddress, image])
 			if (result && 'ok' in result) {
-				await whoami()
+				whoami()
+				router.push('/home')
 			}
 		},
 	})
@@ -44,7 +47,8 @@ export default function Navbar() {
 						<button
 							onClick={() => login()}
 							disabled={authenticating}
-							className='rounded-[10px] bg-[#D9D9D9] px-4 py-[10px] flex text-black font-bold'
+							className='rounded-[10px] bg-[#D9D9D9] px-4 py-[10px] flex text-black font-bold shadow-[0_0_15px_rgba(217,217,217,0.7)] transition-shadow 
+							hover:shadow-[0_0_20px_rgba(217,217,217,0.9)]'
 						>
 							<LogInIcon className='mr-[19px]' />
 							Sign In
