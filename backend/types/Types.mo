@@ -36,10 +36,16 @@ module Types {
         ticketPrice : Nat;
         totalTickets : Nat;
         availableTickets : Nat;
-        resellMaxPricePercent : Nat;
+        resellMaxPrice : Nat;
         imageUrl : ?Text;
+        eventType : EventType;
+        originalEventId : ?Text;
         createdAt : Int;
         updatedAt : ?Int;
+    };
+    public type EventType = {
+        #new;
+        #resell;
     };
     public type ReselledEvents = HashMap.HashMap<Text, ReselledEvent>;
     public type ReselledEvent = {
@@ -52,7 +58,7 @@ module Types {
         createdAt : Int;
         updatedAt : ?Int;
     };
-    public type CreateEventData = {
+    public type CreateNewEventData = {
         title : Text;
         description : Text;
         date : Text;
@@ -61,20 +67,15 @@ module Types {
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
-        resellMaxPricePercent : Nat;
+        resellMaxPrice : Nat;
         imageUrl : ?Text;
     };
     public type UpdateEventData = {
         admins : ?List.List<Principal>;
-        title : ?Text;
-        description : ?Text;
-        date : ?Text;
-        startsAt : ?Int;
-        endsAt : ?Int;
-        location : ?Text;
         imageUrl : ?Text;
     };
     public type CreateResellEventData = {
+        eventId : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
     };
@@ -111,7 +112,7 @@ module Types {
         updatedAt : ?Int;
     };
     public type TransactionType = {
-        #buyTicket;
+        #buyNewTicket;
         #buyResellTicket;
         #withdrawal;
     };

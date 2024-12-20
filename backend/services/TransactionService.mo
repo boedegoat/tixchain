@@ -10,7 +10,7 @@ import UserService "UserService";
 import PlatformService "PlatformService";
 
 module TransactionService {
-    private func transfer(amount : Nat64, to : Principal) : async Result.Result<IcpLedger.BlockIndex, Text> {
+    public func transfer(amount : Nat64, to : Principal) : async Result.Result<IcpLedger.BlockIndex, Text> {
         try {
             let accountIdentifier = await IcpLedger.account_identifier({
                 owner = to;

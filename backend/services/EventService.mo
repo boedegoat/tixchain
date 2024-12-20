@@ -5,14 +5,85 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import List "mo:base/List";
 import Nat "mo:base/Nat";
+import Buffer "mo:base/Buffer";
+import Array "mo:base/Array";
+import Order "mo:base/Order";
+import Int "mo:base/Int";
 import Utils "../lib/Utils";
 import TicketService "TicketService";
+import PlatformService "PlatformService";
+import UserService "UserService";
 
 module EventService {
-    public func createEvent(
+    public func getEvents(events : Types.Events) : Result.Result<[Types.Event], Text> {
+        let eventsArray = Buffer.Buffer<Types.Event>(0);
+
+        for (event in events.vals()) {
+            eventsArray.add(event);
+        };
+
+        let sorted = Array.sort(
+            Buffer.toArray(eventsArray),
+            func(a : Types.Event, b : Types.Event) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
+    public func getEventDetails(events : Types.Events, eventId : Text) : Result.Result<Types.Event, Text> {
+        switch (events.get(eventId)) {
+            case (null) {
+                return #err("Event not found");
+            };
+            case (?event) {
+                return #ok(event);
+            };
+        };
+    };
+
+    public func getMyEvents(caller : Principal, events : Types.Events, tickets : Types.Tickets) : Result.Result<[Types.Event], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        var prevEventIds = List.nil<Text>();
+        var eventsList = List.nil<Types.Event>();
+
+        for (ticket in tickets.vals()) {
+            if (Principal.equal(ticket.owner, caller)) {
+                switch (List.find<Text>(prevEventIds, func p { p == ticket.eventId })) {
+                    case (null) {
+                        switch (events.get(ticket.eventId)) {
+                            case (null) {
+                                return #err("ticket.eventId not found");
+                            };
+                            case (?event) {
+                                eventsList := List.push(event, eventsList);
+                                prevEventIds := List.push(ticket.eventId, prevEventIds);
+                            };
+                        };
+                    };
+                    case (_) {};
+                };
+            };
+        };
+
+        let sorted = Array.sort(
+            List.toArray(eventsList),
+            func(a : Types.Event, b : Types.Event) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
+    public func createNewEvent(
         caller : Principal,
         events : Types.Events,
-        createEventData : Types.CreateEventData,
+        createNewEventData : Types.CreateNewEventData,
     ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
@@ -28,8 +99,8 @@ module EventService {
             ticketPrice;
             totalTickets;
             imageUrl;
-            resellMaxPricePercent;
-        } = createEventData;
+            resellMaxPrice;
+        } = createNewEventData;
 
         if (Text.size(title) < 3 or Text.size(title) > 100) {
             return #err("Title must be between 3 and 100 characters");
@@ -47,8 +118,8 @@ module EventService {
             return #err("Total tickets can't be negative");
         };
 
-        if (resellMaxPricePercent < 0 or resellMaxPricePercent > 200) {
-            return #err("Resell max price percent can't over 200%");
+        if (resellMaxPrice < ticketPrice) {
+            return #err("Resell max price can't lower than ticket price");
         };
 
         let newEventId = Utils.generateUUID(caller, description);
@@ -66,8 +137,10 @@ module EventService {
             ticketPrice = ticketPrice;
             totalTickets = totalTickets;
             availableTickets = totalTickets;
-            resellMaxPricePercent = resellMaxPricePercent;
+            resellMaxPrice = resellMaxPrice;
             imageUrl = imageUrl;
+            eventType = #new;
+            originalEventId = null;
             createdAt = Time.now();
             updatedAt = null;
         };
@@ -76,30 +149,27 @@ module EventService {
         return #ok(newEvent);
     };
 
-    public func createReselledEvent(
+    public func createResellEvent(
         caller : Principal,
-        tickets : Types.Tickets,
         events : Types.Events,
-        eventId : Text,
-        reselledEvents : Types.ReselledEvents,
+        tickets : Types.Tickets,
         createResellEventData : Types.CreateResellEventData,
-    ) : Result.Result<Types.ReselledEvent, Text> {
+    ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
         };
+
+        let { eventId; ticketPrice; totalTickets } = createResellEventData;
 
         switch (events.get(eventId)) {
             case (null) {
                 return #err("Event not found");
             };
             case (?event) {
-                let { resellMaxPricePercent; description } = event;
-                let { ticketPrice; totalTickets } = createResellEventData;
+                let { resellMaxPrice; description } = event;
 
-                let maxPrice = event.ticketPrice + event.ticketPrice * resellMaxPricePercent / 100;
-
-                if (ticketPrice > maxPrice) {
-                    return #err("Ticket price exceeds resell percentage limit of " # Nat.toText(resellMaxPricePercent) # "%");
+                if (ticketPrice > resellMaxPrice) {
+                    return #err("Ticket price exceeds resell max price limit of " # Nat.toText(resellMaxPrice));
                 };
 
                 switch (TicketService.getMyTicketsByEventId(caller, tickets, events, eventId)) {
@@ -113,116 +183,33 @@ module EventService {
                     };
                 };
 
-                let newReselledEventId = Utils.generateUUID(caller, description);
-                let newReselledEvent : Types.ReselledEvent = {
-                    id = newReselledEventId;
+                let newResellEventId = Utils.generateUUID(caller, description);
+
+                let newResellEvent : Types.Event = {
+                    event with
+                    id = newResellEventId;
                     owner = caller;
-                    eventId = eventId;
                     ticketPrice = ticketPrice;
                     totalTickets = totalTickets;
                     availableTickets = totalTickets;
+                    eventType = #resell;
+                    originalEventId = ?event.id;
                     createdAt = Time.now();
                     updatedAt = null;
                 };
+                events.put(newResellEventId, newResellEvent);
 
-                reselledEvents.put(newReselledEventId, newReselledEvent);
-                return #ok(newReselledEvent);
+                return #ok(newResellEvent);
             };
         };
-
     };
 
-    // public func updateEvent(
-    //     caller : Principal,
-    //     events : Types.Events,
-    //     eventId : Text,
-    //     updateEventData : Types.UpdateEventData,
-    // ) : Result.Result<Types.Event, Text> {
-    //     if (Principal.isAnonymous(caller)) {
-    //         return #err("Anonymous principals are not allowed");
-    //     };
-
-    //     switch (events.get(eventId)) {
-    //         case (null) {
-    //             return #err("Event not found");
-    //         };
-    //         case (?event) {
-    //             if (not Principal.equal(event.owner, caller)) {
-    //                 return #err("Only the owner who can update this event");
-    //             };
-
-    //             let admins = switch (updateEventData.admins) {
-    //                 case (null) {
-    //                     event.admins;
-    //                 };
-    //                 case (?newAdmins) {
-    //                     newAdmins;
-    //                 };
-    //             };
-
-    //             let title = switch (updateEventData.title) {
-    //                 case (null) {
-    //                     event.title;
-    //                 };
-    //                 case (?newTitle) {
-    //                     if (Text.size(newTitle) < 3 or Text.size(newTitle) > 100) {
-    //                         return #err("Title must be between 3 and 100 characters");
-    //                     };
-    //                     newTitle;
-    //                 };
-    //             };
-
-    //             let description = switch (updateEventData.description) {
-    //                 case (null) {
-    //                     event.description;
-    //                 };
-    //                 case (?newDescription) {
-    //                     if (newDescription == "" or Text.size(newDescription) > 1000) {
-    //                         return #err("Description must be between 1 and 1000 characters");
-    //                     };
-    //                     newDescription;
-    //                 };
-    //             };
-
-    //             let date = switch (updateEventData.date) {
-    //                 case (null) {
-    //                     event.date;
-    //                 };
-    //                 case (?newDate) {
-    //                     newDate;
-    //                 };
-    //             };
-
-    //             let location = switch (updateEventData.location) {
-    //                 case (null) {
-    //                     event.location;
-    //                 };
-    //                 case (?newLocation) {
-    //                     newLocation;
-    //                 };
-    //             };
-
-    //             let updatedEvent : Types.Event = {
-    //                 event with
-    //                 admins = admins;
-    //                 title = title;
-    //                 description = description;
-    //                 date = date;
-    //                 location = location;
-    //                 updatedAt = ?Time.now();
-    //             };
-
-    //             events.put(event.id, updatedEvent);
-    //             return #ok(updatedEvent);
-    //         };
-    //     };
-    // };
-
-    public func deleteEvent(
+    public func updateEvent(
         caller : Principal,
         events : Types.Events,
         eventId : Text,
-    ) : Result.Result<(), Text> {
+        updateEventData : Types.UpdateEventData,
+    ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
         };
@@ -235,9 +222,73 @@ module EventService {
                 if (not Principal.equal(event.owner, caller)) {
                     return #err("Only the owner who can update this event");
                 };
-                // TODO: add logic for refunding tickets
-                events.delete(eventId);
-                return #ok(());
+
+                let admins = switch (updateEventData.admins) {
+                    case (null) {
+                        event.admins;
+                    };
+                    case (?newAdmins) {
+                        newAdmins;
+                    };
+                };
+
+                let imageUrl = switch (updateEventData.imageUrl) {
+                    case (null) {
+                        event.imageUrl;
+                    };
+                    case (?newImageUrl) {
+                        ?newImageUrl;
+                    };
+                };
+
+                let updatedEvent : Types.Event = {
+                    event with
+                    admins = admins;
+                    imageUrl = imageUrl;
+                    updatedAt = ?Time.now();
+                };
+
+                events.put(event.id, updatedEvent);
+                return #ok(updatedEvent);
+            };
+        };
+    };
+
+    public func deleteEvent(
+        caller : Principal,
+        users : Types.Users,
+        platformBalance : Types.PlatformBalance,
+        tickets : Types.Tickets,
+        events : Types.Events,
+        eventId : Text,
+    ) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        switch (events.get(eventId)) {
+            case (null) {
+                return #err("Event not found");
+            };
+            case (?event) {
+                if (not Principal.equal(event.owner, caller)) {
+                    return #err("Only the owner who can update this event");
+                };
+
+                switch (TicketService.getTicketsBought(events, eventId, tickets)) {
+                    case (#err(msg)) {
+                        return #err(msg);
+                    };
+                    case (#ok(eventTickets)) {
+                        let platformFee = Utils.calculatePlatformFee(event.ticketPrice);
+                        for (ticket in eventTickets.vals()) {
+                            ignore UserService.updateUserBalance(users, ticket.owner, event.ticketPrice, #add);
+                            ignore PlatformService.updatePlatformBalance(platformBalance, Nat.sub(event.ticketPrice, platformFee), platformFee, #sub);
+                        };
+                        events.delete(eventId);
+                        return #ok(());
+                    };
+                };
             };
         };
     };
