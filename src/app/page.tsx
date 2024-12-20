@@ -1,9 +1,30 @@
+'use client'
+
 import { LogInIcon } from 'lucide-react'
 import TicketIcon from '@/assets/icons/ticket.svg'
 import ShieldIcon from '@/assets/icons/shield.svg'
 import LoopIcon from '@/assets/icons/loop.svg'
+import useAuthConfigured from '@/hooks/use-auth-configured'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+	const { login, authenticated, authenticating } = useAuthConfigured()
+	const router = useRouter()
+
+	const onExploreEvents = () => {
+		if (!authenticated) {
+			return login()
+		}
+		router.push('/home')
+	}
+
+	const onCreateYourFirstEvent = () => {
+		if (!authenticated) {
+			return login()
+		}
+		router.push('/events/create')
+	}
+
 	return (
 		<>
 			{/* hero section */}
@@ -13,7 +34,11 @@ export default function Home() {
 						Welcome to <span className='text-tixchain-accent'>TixChain</span>
 					</h1>
 					<p className='text-[24px] mt-2'>The future of online ticketing is here</p>
-					<button className='mt-10 mx-auto flex items-center text-[#346354] font-bold px-4 py-[6px] rounded-[10px] [background:linear-gradient(90deg,#84DFC2_0%,#B2DED0_100%)] shadow-[0_0_20px_rgba(132,223,194,0.5)] hover:shadow-[0_0_30px_rgba(132,223,194,0.7)] transition-shadow duration-300'>
+					<button
+						disabled={authenticating}
+						onClick={onExploreEvents}
+						className='mt-10 mx-auto flex items-center text-[#346354] font-bold px-4 py-[6px] rounded-[10px] [background:linear-gradient(90deg,#84DFC2_0%,#B2DED0_100%)] shadow-[0_0_20px_rgba(132,223,194,0.5)] hover:shadow-[0_0_30px_rgba(132,223,194,0.7)] transition-shadow duration-300'
+					>
 						Explore Events <LogInIcon className='ml-3' />
 					</button>
 				</div>
@@ -58,7 +83,11 @@ export default function Home() {
 						Ready to Get <span className='text-tixchain-accent'>Started</span>
 					</h2>
 					<p className='text-center mt-2 text-[20px]'>The future of online ticketing is here</p>
-					<button className='mt-10 mx-auto flex items-center text-[#346354] font-bold px-4 py-[6px] rounded-[10px] [background:linear-gradient(90deg,#84DFC2_0%,#B2DED0_100%)] shadow-[0_0_20px_rgba(132,223,194,0.5)] hover:shadow-[0_0_30px_rgba(132,223,194,0.7)] transition-shadow duration-300'>
+					<button
+						disabled={authenticating}
+						onClick={onCreateYourFirstEvent}
+						className='mt-10 mx-auto flex items-center text-[#346354] font-bold px-4 py-[6px] rounded-[10px] [background:linear-gradient(90deg,#84DFC2_0%,#B2DED0_100%)] shadow-[0_0_20px_rgba(132,223,194,0.5)] hover:shadow-[0_0_30px_rgba(132,223,194,0.7)] transition-shadow duration-300'
+					>
 						Create your first event
 					</button>
 				</div>

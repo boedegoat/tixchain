@@ -1,40 +1,19 @@
 'use client'
 
-import { useQueryCall, useUpdateCall } from '@/lib/actor'
-import { generateImageFromUsername, generateUsernameFromId, getUserDepositAddress } from '@/lib/utils'
-import { useAuth } from '@ic-reactor/react'
+import { useQueryCall } from '@/lib/actor'
 import Link from 'next/link'
 import { Avatar, AvatarImage } from '../ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ChevronDown, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
-import { useRouter } from 'next/navigation'
+import useAuthConfigured from '@/hooks/use-auth-configured'
 
 export default function Navbar() {
-	const { call: whoami } = useUpdateCall({
-		functionName: 'whoami',
-	})
 	const { data: user, loading: userLoading } = useQueryCall({
 		functionName: 'whoami',
 		refetchOnMount: true,
 	})
-	const router = useRouter()
-
-	const { login, logout, authenticating, authenticated } = useAuth({
-		async onLoginSuccess(principal) {
-			const username = generateUsernameFromId(principal.toText())
-			const depositAddress = getUserDepositAddress(principal)
-			const image = generateImageFromUsername(username)
-			const result = await authenticateUser([username, depositAddress, image])
-			if (result && 'ok' in result) {
-				whoami()
-				router.push('/home')
-			}
-		},
-	})
-	const { call: authenticateUser } = useUpdateCall({
-		functionName: 'authenticateUser',
-	})
+	const { login, logout, authenticating, authenticated } = useAuthConfigured()
 
 	return (
 		<>
