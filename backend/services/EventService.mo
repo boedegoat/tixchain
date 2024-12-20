@@ -43,6 +43,43 @@ module EventService {
         };
     };
 
+    public func getMyEvents(caller : Principal, events : Types.Events, tickets : Types.Tickets) : Result.Result<[Types.Event], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        var prevEventIds = List.nil<Text>();
+        var eventsList = List.nil<Types.Event>();
+
+        for (ticket in tickets.vals()) {
+            if (Principal.equal(ticket.owner, caller)) {
+                switch (List.find<Text>(prevEventIds, func p { p == ticket.eventId })) {
+                    case (null) {
+                        switch (events.get(ticket.eventId)) {
+                            case (null) {
+                                return #err("ticket.eventId not found");
+                            };
+                            case (?event) {
+                                eventsList := List.push(event, eventsList);
+                                prevEventIds := List.push(ticket.eventId, prevEventIds);
+                            };
+                        };
+                    };
+                    case (_) {};
+                };
+            };
+        };
+
+        let sorted = Array.sort(
+            List.toArray(eventsList),
+            func(a : Types.Event, b : Types.Event) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
     public func createNewEvent(
         caller : Principal,
         events : Types.Events,

@@ -90,6 +90,10 @@ actor TixChain {
         return EventService.getEventDetails(events, eventId);
     };
 
+    public shared({ caller }) func getMyEvents() : async Result.Result<[Types.Event], Text> {
+        return EventService.getMyEvents(caller, events, tickets);
+    };
+
     // === TICKETS ENDPOINT
     public shared ({ caller }) func createBuyTicketTx(eventId: Text) : async Result.Result<Types.Transaction, Text> {
         return await TicketService.createBuyTicketTx(caller, events, transactions, eventId);
@@ -104,6 +108,14 @@ actor TixChain {
 
     public query func getTicketsBought(eventId : Text) : async Result.Result<[Types.Ticket], Text> {
         return TicketService.getTicketsBought(events, eventId, tickets);
+    };
+
+    public shared ({ caller }) func getMyTickets () : async Result.Result<[Types.Ticket], Text> {
+        return TicketService.getMyTickets(caller, tickets);
+    };
+
+    public shared ({ caller }) func getMyTicketsByEventId (eventId: Text) : async Result.Result<[Types.Ticket], Text> {
+        return TicketService.getMyTicketsByEventId(caller, tickets, events, eventId);
     };
 
     public shared ({ caller }) func useTicket(ticketId : Text) : async Result.Result<Text, Text> {
