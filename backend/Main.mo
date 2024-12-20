@@ -66,8 +66,12 @@ actor TixChain {
     };
 
     // === EVENTS ENDPOINT
-    public shared ({ caller }) func createEvent(createEventData: Types.CreateEventData) : async Result.Result<Types.Event, Text> {
-        return EventService.createEvent(caller, events, createEventData);
+    public shared ({ caller }) func createNewEvent(createNewEventData: Types.CreateNewEventData) : async Result.Result<Types.Event, Text> {
+        return EventService.createNewEvent(caller, events, createNewEventData);
+    };
+
+    public shared ({ caller }) func createResellEvent(createResellEventData: Types.CreateResellEventData) : async Result.Result<Types.Event, Text> {
+        return EventService.createResellEvent(caller, events, tickets, createResellEventData);
     };
 
     public shared ({ caller }) func updateEvent(eventId : Text, updateEventData: Types.UpdateEventData) : async Result.Result<Types.Event, Text> {
@@ -75,15 +79,15 @@ actor TixChain {
     };
 
     public shared ({ caller }) func deleteEvent(eventId : Text) : async Result.Result<(), Text> {
-        return await EventService.deleteEvent(caller, platformBalance, tickets, events, eventId);
+        return await EventService.deleteEvent(caller, users, platformBalance, tickets, events, eventId);
     };
 
-    public func getAllEvents() : async [Types.Event] {
-        return Iter.toArray(events.vals());
+    public func getEvents() : async Result.Result<[Types.Event], Text> {
+        return EventService.getEvents(events);
     };
 
-    public func getEvent(eventId : Text) : async ?Types.Event {
-        return events.get(eventId);
+    public func getEventDetails(eventId : Text) : async Result.Result<Types.Event, Text> {
+        return EventService.getEventDetails(events, eventId);
     };
 
     // === TICKETS ENDPOINT

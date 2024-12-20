@@ -5,17 +5,48 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import List "mo:base/List";
 import Nat "mo:base/Nat";
-import Nat64 "mo:base/Nat64";
+import Buffer "mo:base/Buffer";
+import Array "mo:base/Array";
+import Order "mo:base/Order";
+import Int "mo:base/Int";
 import Utils "../lib/Utils";
 import TicketService "TicketService";
-import TransactionService "TransactionService";
 import PlatformService "PlatformService";
+import UserService "UserService";
 
 module EventService {
-    public func createEvent(
+    public func getEvents(events : Types.Events) : Result.Result<[Types.Event], Text> {
+        let eventsArray = Buffer.Buffer<Types.Event>(0);
+
+        for (event in events.vals()) {
+            eventsArray.add(event);
+        };
+
+        let sorted = Array.sort(
+            Buffer.toArray(eventsArray),
+            func(a : Types.Event, b : Types.Event) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
+    public func getEventDetails(events : Types.Events, eventId : Text) : Result.Result<Types.Event, Text> {
+        switch (events.get(eventId)) {
+            case (null) {
+                return #err("Event not found");
+            };
+            case (?event) {
+                return #ok(event);
+            };
+        };
+    };
+
+    public func createNewEvent(
         caller : Principal,
         events : Types.Events,
-        createEventData : Types.CreateEventData,
+        createNewEventData : Types.CreateNewEventData,
     ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
@@ -32,7 +63,7 @@ module EventService {
             totalTickets;
             imageUrl;
             resellMaxPrice;
-        } = createEventData;
+        } = createNewEventData;
 
         if (Text.size(title) < 3 or Text.size(title) > 100) {
             return #err("Title must be between 3 and 100 characters");
@@ -71,6 +102,8 @@ module EventService {
             availableTickets = totalTickets;
             resellMaxPrice = resellMaxPrice;
             imageUrl = imageUrl;
+            eventType = #new;
+            originalEventId = null;
             createdAt = Time.now();
             updatedAt = null;
         };
@@ -79,17 +112,17 @@ module EventService {
         return #ok(newEvent);
     };
 
-    public func createReselledEvent(
+    public func createResellEvent(
         caller : Principal,
-        tickets : Types.Tickets,
         events : Types.Events,
-        eventId : Text,
-        reselledEvents : Types.ReselledEvents,
+        tickets : Types.Tickets,
         createResellEventData : Types.CreateResellEventData,
-    ) : Result.Result<Types.ReselledEvent, Text> {
+    ) : Result.Result<Types.Event, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
         };
+
+        let { eventId; ticketPrice; totalTickets } = createResellEventData;
 
         switch (events.get(eventId)) {
             case (null) {
@@ -97,7 +130,6 @@ module EventService {
             };
             case (?event) {
                 let { resellMaxPrice; description } = event;
-                let { ticketPrice; totalTickets } = createResellEventData;
 
                 if (ticketPrice > resellMaxPrice) {
                     return #err("Ticket price exceeds resell max price limit of " # Nat.toText(resellMaxPrice));
@@ -114,23 +146,25 @@ module EventService {
                     };
                 };
 
-                let newReselledEventId = Utils.generateUUID(caller, description);
-                let newReselledEvent : Types.ReselledEvent = {
-                    id = newReselledEventId;
+                let newResellEventId = Utils.generateUUID(caller, description);
+
+                let newResellEvent : Types.Event = {
+                    event with
+                    id = newResellEventId;
                     owner = caller;
-                    eventId = eventId;
                     ticketPrice = ticketPrice;
                     totalTickets = totalTickets;
                     availableTickets = totalTickets;
+                    eventType = #resell;
+                    originalEventId = ?event.id;
                     createdAt = Time.now();
                     updatedAt = null;
                 };
+                events.put(newResellEventId, newResellEvent);
 
-                reselledEvents.put(newReselledEventId, newReselledEvent);
-                return #ok(newReselledEvent);
+                return #ok(newResellEvent);
             };
         };
-
     };
 
     public func updateEvent(
@@ -185,6 +219,7 @@ module EventService {
 
     public func deleteEvent(
         caller : Principal,
+        users : Types.Users,
         platformBalance : Types.PlatformBalance,
         tickets : Types.Tickets,
         events : Types.Events,
@@ -210,7 +245,7 @@ module EventService {
                     case (#ok(eventTickets)) {
                         let platformFee = Utils.calculatePlatformFee(event.ticketPrice);
                         for (ticket in eventTickets.vals()) {
-                            ignore await TransactionService.transfer(Nat64.fromNat(event.ticketPrice), ticket.owner);
+                            ignore UserService.updateUserBalance(users, ticket.owner, event.ticketPrice, #add);
                             ignore PlatformService.updatePlatformBalance(platformBalance, Nat.sub(event.ticketPrice, platformFee), platformFee, #sub);
                         };
                         events.delete(eventId);

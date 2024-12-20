@@ -47,13 +47,21 @@ module TicketService {
                 let netAmount = Nat.sub(event.ticketPrice, platformFee);
 
                 let newTransactionId = Utils.generateUUID(caller, event.title);
+                let transactionType = switch (event.eventType) {
+                    case (#new) {
+                        #buyNewTicket;
+                    };
+                    case (#resell) {
+                        #buyResellTicket;
+                    };
+                };
 
                 let newTransaction : Types.Transaction = {
                     id = newTransactionId;
                     from = caller;
                     to = event.owner;
                     amount = netAmount;
-                    transactionType = #buyTicket;
+                    transactionType = transactionType;
                     txStatus = #pending;
                     eventId = ?event.id;
                     platformFee = platformFee;
@@ -109,40 +117,70 @@ module TicketService {
                 switch (status) {
                     case (#completed) {
                         try {
-                            // update event ticket owner balance
-                            ignore UserService.updateUserBalance(users, transaction.to, transaction.amount, #add);
-
-                            // update platform balance
-                            ignore PlatformService.updatePlatformBalance(
-                                platformBalance,
-                                transaction.amount,
-                                transaction.platformFee,
-                                #add,
-                            );
-
-                            // create nft ticket
-                            let newTicketId = Utils.generateUUID(caller, transaction.id);
-
-                            let newTicket : Types.Ticket = {
-                                id = newTicketId;
-                                owner = transaction.from;
-                                eventId = eventId;
-                                isUsed = false;
-                                createdAt = Time.now();
-                                updatedAt = null;
-                            };
-
-                            tickets.put(newTicketId, newTicket);
-
-                            // update event availableTicket
                             switch (events.get(eventId)) {
-                                case (null) {};
+                                case (null) {
+                                    return #err("Event not found");
+                                };
                                 case (?event) {
+                                    switch (transaction.transactionType) {
+                                        case (#buyNewTicket) {
+                                            // create nft ticket
+                                            let newTicketId = Utils.generateUUID(caller, transaction.id);
+
+                                            let newTicket : Types.Ticket = {
+                                                id = newTicketId;
+                                                owner = transaction.from;
+                                                eventId = eventId;
+                                                isUsed = false;
+                                                createdAt = Time.now();
+                                                updatedAt = null;
+                                            };
+
+                                            tickets.put(newTicketId, newTicket);
+                                        };
+                                        case (#buyResellTicket) {
+                                            // change ticket ownership
+                                            switch (event.originalEventId) {
+                                                case (null) {
+                                                    return #err("Missing resell event id");
+                                                };
+                                                case (?originalEventId) {
+                                                    switch (getMyTicketsByEventId(transaction.to, tickets, events, originalEventId)) {
+                                                        case (#err(text)) {
+                                                            return #err(text);
+                                                        };
+                                                        case (#ok(reselledTickets)) {
+                                                            let reselledTicket = reselledTickets[0];
+                                                            let updatedTicket : Types.Ticket = {
+                                                                reselledTicket with
+                                                                owner = caller
+                                                            };
+                                                            tickets.put(reselledTicket.id, updatedTicket);
+                                                        };
+                                                    };
+                                                };
+                                            };
+
+                                        };
+                                        case (_) {};
+                                    };
+
+                                    // update event ticket owner balance
+                                    ignore UserService.updateUserBalance(users, transaction.to, transaction.amount, #add);
+
+                                    // update platform balance
+                                    ignore PlatformService.updatePlatformBalance(
+                                        platformBalance,
+                                        transaction.amount,
+                                        transaction.platformFee,
+                                        #add,
+                                    );
+
                                     events.put(eventId, { event with availableTickets = Nat.sub(event.availableTickets, 1) });
+                                    return #ok(updatedTransaction);
                                 };
                             };
 
-                            return #ok(updatedTransaction);
                         } catch (error) {
                             let failedTx : Types.Transaction = {
                                 transaction with
@@ -171,7 +209,7 @@ module TicketService {
             case (?event) {
                 let ticketsArray = Buffer.Buffer<Types.Ticket>(0);
 
-                for ((_, ticket) in tickets.entries()) {
+                for (ticket in tickets.vals()) {
                     if (ticket.eventId == event.id) {
                         ticketsArray.add(ticket);
                     };
@@ -196,7 +234,7 @@ module TicketService {
 
         let ticketsArray = Buffer.Buffer<Types.Ticket>(0);
 
-        for ((_, ticket) in tickets.entries()) {
+        for (ticket in tickets.vals()) {
             if (Principal.equal(ticket.owner, caller)) {
                 ticketsArray.add(ticket);
             };
@@ -229,7 +267,7 @@ module TicketService {
             case (?event) {
                 let ticketsArray = Buffer.Buffer<Types.Ticket>(0);
 
-                for ((_, ticket) in tickets.entries()) {
+                for (ticket in tickets.vals()) {
                     if (Principal.equal(ticket.owner, caller) and ticket.eventId == event.id) {
                         ticketsArray.add(ticket);
                     };
