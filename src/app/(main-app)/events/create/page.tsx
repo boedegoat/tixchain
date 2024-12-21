@@ -55,7 +55,7 @@ export default function CreateEvent() {
 		if (result) {
 			if ('ok' in result) {
 				toast.success('Event created', { id: toastId })
-				router.push('/events')
+				location.href = '/events'
 				return
 			}
 			if ('err' in result) {

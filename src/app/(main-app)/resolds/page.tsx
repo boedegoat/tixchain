@@ -6,7 +6,7 @@ import { transferICPToBackendCanister } from '@/lib/utils'
 import { useAuthState } from '@ic-reactor/react'
 import toast from 'react-hot-toast'
 
-export default function EventPage() {
+export default function ResoldPage() {
 	const { data: eventsResponse, loading: fetchingEvents } = useQueryCall({
 		functionName: 'getEvents',
 		refetchOnMount: true,
@@ -59,14 +59,13 @@ export default function EventPage() {
 	}
 
 	const events = eventsResponse && 'ok' in eventsResponse ? eventsResponse.ok : []
-	const newEvents = events.filter((event) => 'new' in event.eventType)
+	const resoldEvents = events.filter((event) => 'resell' in event.eventType)
 
 	return (
 		<div className='container mx-auto px-6 py-4 '>
 			<h1 className='text-4xl font-bold mb-8'>
-				Upcoming{' '}
 				<span className='bg-gradient-to-r from-[#B6FFE8] to-[#1EFFB9] text-transparent bg-clip-text'>
-					Events
+					Resold Events
 				</span>
 			</h1>
 
@@ -74,7 +73,7 @@ export default function EventPage() {
 				'loading...'
 			) : (
 				<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 flex-grow gap-x-20 gap-y-10 rounded-xl'>
-					{newEvents.map((event) => (
+					{resoldEvents.map((event) => (
 						<EventCard key={event.id} event={event} onBuyTicket={onBuyTicket} />
 					))}
 				</div>

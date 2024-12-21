@@ -57,6 +57,10 @@ actor TixChain {
         return users.get(caller);
     };
 
+    public query func getUsernameById(id: Principal) : async Result.Result<Text, Text> {
+        return UserService.getUsernameById(users, id);
+    };
+
     public shared ({ caller }) func getLedgerBalance() : async Nat {
         return await UserService.getLedgerBalance(caller);
     };
@@ -92,6 +96,10 @@ actor TixChain {
 
     public shared({ caller }) func getMyEvents() : async Result.Result<[Types.MyEvent], Text> {
         return EventService.getMyEvents(caller, events, tickets);
+    };
+
+    public shared({ caller }) func getMyCreatedEvents() : async Result.Result<[Types.MyCreatedEvent], Text> {
+        return EventService.getMyCreatedEvents(caller, events, tickets);
     };
 
     // === TICKETS ENDPOINT

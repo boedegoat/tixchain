@@ -1,6 +1,6 @@
 'use client'
 
-import { useQueryCall } from '@/lib/actor'
+import { useQueryCall, useUpdateCall } from '@/lib/actor'
 import Link from 'next/link'
 import { Avatar, AvatarImage } from '../ui/avatar'
 import {
@@ -14,10 +14,22 @@ import {
 import { ChevronDown, CopyIcon, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
 import useAuthConfigured from '@/hooks/use-auth-configured'
-import { convertE8sToICP, truncateAddress } from '@/lib/utils'
+import { convertE8sToICP, convertICPToE8s, truncateAddress } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
 import useUser from '@/hooks/use-user'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '../ui/label'
+import { Input } from '../ui/input'
+import { useState } from 'react'
 
 export default function Navbar() {
 	const { user, userLoading } = useUser()
@@ -30,6 +42,26 @@ export default function Navbar() {
 		refetchOnMount: true,
 	})
 	const { login, logout, authenticating, authenticated, depositAddress } = useAuthConfigured()
+	const { call: withdraw } = useUpdateCall({
+		functionName: 'withdraw',
+	})
+	const [withdrawAmount, setWithdrawAmount] = useState(0)
+
+	const onWithdraw = async () => {
+		const amountInE8s = convertICPToE8s(withdrawAmount)
+
+		const toastId = toast.loading('Processing withdraw')
+
+		const withdrawResult = (await withdraw([amountInE8s]))!
+
+		if ('err' in withdrawResult) {
+			toast.error(withdrawResult.err, { id: toastId })
+			return
+		}
+
+		toast.success('Withdraw succes', { id: toastId })
+		location.reload()
+	}
 
 	return (
 		<>
@@ -72,7 +104,8 @@ export default function Navbar() {
 									<DropdownMenuLabel>
 										<div>
 											<div className='mt-2'>
-												<div>{convertE8sToICP(ledgerBalance ?? BigInt(0))} ICP</div>
+												<div>Ledger: {convertE8sToICP(ledgerBalance ?? BigInt(0))} ICP</div>
+												<div>App: {convertE8sToICP(appBalance ?? BigInt(0))} ICP</div>
 
 												<div className='text-sm text-muted-foreground'>
 													Deposit Address:{' '}
@@ -97,15 +130,55 @@ export default function Navbar() {
 													</TooltipProvider>
 												</div>
 											</div>
-											<Button size={'sm'} variant={'outline'} className='w-full mt-2 text-[10px]'>
-												Withdraw {appBalance && <div>{convertE8sToICP(appBalance)} ICP</div>}{' '}
-												ICP from App Balance
-											</Button>
+											<Dialog>
+												<DialogTrigger asChild>
+													<Button
+														size={'sm'}
+														variant={'outline'}
+														className='w-full mt-2 text-[10px]'
+													>
+														Withdraw from App
+													</Button>
+												</DialogTrigger>
+												<DialogContent>
+													<DialogHeader>
+														<DialogTitle>Withdraw ICP</DialogTitle>
+														<DialogDescription>
+															Current App Balance:{' '}
+															{convertE8sToICP(appBalance ?? BigInt(0))} ICP
+														</DialogDescription>
+													</DialogHeader>
+													<div className='grid gap-4 py-4'>
+														<div className='grid grid-cols-4 items-center gap-4'>
+															<Label htmlFor='name' className='text-right'>
+																Amount
+															</Label>
+															<Input
+																id='amount'
+																type='number'
+																min={0.0001}
+																value={withdrawAmount}
+																onChange={(e) =>
+																	setWithdrawAmount(Number(e.target.value))
+																}
+																className='col-span-3'
+															/>
+														</div>
+													</div>
+													<DialogFooter>
+														<Button type='submit' className='w-full' onClick={onWithdraw}>
+															Withdraw
+														</Button>
+													</DialogFooter>
+												</DialogContent>
+											</Dialog>
 										</div>
 									</DropdownMenuLabel>
 									<DropdownMenuSeparator />
-									<DropdownMenuItem>
-										<User /> Profile
+									<DropdownMenuItem asChild>
+										<Link href='/profile'>
+											<User /> Profile
+										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuItem onClick={() => logout()}>
 										<LogOut />
