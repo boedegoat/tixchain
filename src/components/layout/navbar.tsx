@@ -3,17 +3,46 @@
 import { useQueryCall } from '@/lib/actor'
 import Link from 'next/link'
 import { Avatar, AvatarImage } from '../ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ChevronDown, LogInIcon, LogOut, User } from 'lucide-react'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChevronDown, CopyIcon, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
 import useAuthConfigured from '@/hooks/use-auth-configured'
+import { convertE8sToICP, truncateAddress } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import toast from 'react-hot-toast'
+import { useEffect } from 'react'
 
 export default function Navbar() {
-	const { data: user, loading: userLoading } = useQueryCall({
+	const {
+		data: user,
+		loading: userLoading,
+		refetch: refetchWhoami,
+	} = useQueryCall({
 		functionName: 'whoami',
 		refetchOnMount: true,
 	})
-	const { login, logout, authenticating, authenticated } = useAuthConfigured()
+	const { data: ledgerBalance } = useQueryCall({
+		functionName: 'getLedgerBalance',
+		refetchOnMount: true,
+	})
+	const { data: appBalance } = useQueryCall({
+		functionName: 'getAppBalance',
+		refetchOnMount: true,
+	})
+	const { login, logout, authenticating, authenticated, depositAddress } = useAuthConfigured()
+
+	useEffect(() => {
+		if (!user) {
+			refetchWhoami()
+		}
+	}, [user])
 
 	return (
 		<>
@@ -52,7 +81,42 @@ export default function Navbar() {
 										)}
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align='center'>
+								<DropdownMenuContent align='end'>
+									<DropdownMenuLabel>
+										<div>
+											<div className='mt-2'>
+												<div>{convertE8sToICP(ledgerBalance ?? BigInt(0))} ICP</div>
+
+												<div className='text-sm text-muted-foreground'>
+													Deposit Address:{' '}
+													<TooltipProvider>
+														<Tooltip>
+															<TooltipTrigger asChild>
+																<button
+																	onClick={() => {
+																		navigator.clipboard.writeText(depositAddress)
+																		toast.success('Deposit address copied')
+																	}}
+																	className='inline-flex items-center gap-1 rounded-md hover:bg-muted p-0.5'
+																>
+																	{truncateAddress(depositAddress)}{' '}
+																	<CopyIcon className='w-3 h-3' />
+																</button>
+															</TooltipTrigger>
+															<TooltipContent>
+																<p>Copy Address</p>
+															</TooltipContent>
+														</Tooltip>
+													</TooltipProvider>
+												</div>
+											</div>
+											<Button size={'sm'} variant={'outline'} className='w-full mt-2 text-[10px]'>
+												Withdraw {appBalance && <div>{convertE8sToICP(appBalance)} ICP</div>}{' '}
+												ICP from App Balance
+											</Button>
+										</div>
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem>
 										<User /> Profile
 									</DropdownMenuItem>

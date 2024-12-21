@@ -30,8 +30,6 @@ module Types {
         title : Text;
         description : Text;
         date : Text;
-        startsAt : Int;
-        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
@@ -62,8 +60,6 @@ module Types {
         title : Text;
         description : Text;
         date : Text;
-        startsAt : Int;
-        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
@@ -104,6 +100,7 @@ module Types {
         from : Principal;
         to : Principal;
         amount : Nat;
+        quantity : Nat;
         transactionType : TransactionType;
         txStatus : TxStatus;
         eventId : ?Text;

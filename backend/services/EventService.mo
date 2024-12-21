@@ -94,8 +94,6 @@ module EventService {
             description;
             date;
             location;
-            startsAt;
-            endsAt;
             ticketPrice;
             totalTickets;
             imageUrl;
@@ -132,8 +130,6 @@ module EventService {
             description = description;
             date = date;
             location = location;
-            startsAt = startsAt;
-            endsAt = endsAt;
             ticketPrice = ticketPrice;
             totalTickets = totalTickets;
             availableTickets = totalTickets;

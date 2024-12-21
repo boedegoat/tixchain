@@ -1,14 +1,24 @@
+'use client'
+
 import EventCards from '@/components/layout/EventCards'
+import { useQueryCall } from '@/lib/actor'
 
 export default function EventPage() {
-	const events = [
-		{ title: 'Summer Concert Festival', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-		{ title: "Diddy's Festival 2024", date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-		{ title: 'Rumah Rahman', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-		{ title: 'Summer Concert Festival', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-		{ title: "Diddy's Festival 2024", date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-		{ title: 'Rumah Rahman', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
-	]
+	const { data: events, loading: fetchingEvents } = useQueryCall({
+		functionName: 'getEvents',
+		refetchOnMount: true,
+	})
+
+	console.log(events)
+
+	// const events = [
+	// 	{ title: 'Summer Concert Festival', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// 	{ title: "Diddy's Festival 2024", date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// 	{ title: 'Rumah Rahman', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// 	{ title: 'Summer Concert Festival', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// 	{ title: "Diddy's Festival 2024", date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// 	{ title: 'Rumah Rahman', date: 'Aug 15, 2024 - 2:00 PM', location: 'Grand Indonesia, Jakarta' },
+	// ]
 
 	return (
 		<div className='container mx-auto px-6 py-4 '>
@@ -19,7 +29,7 @@ export default function EventPage() {
 				</span>
 			</h1>
 
-			<EventCards events={events} />
+			{fetchingEvents ? <div>loading...</div> : events && 'ok' in events && <EventCards events={events.ok} />}
 		</div>
 	)
 }

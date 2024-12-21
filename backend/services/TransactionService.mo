@@ -53,13 +53,14 @@ module TransactionService {
             return #err("Withdrawal amount must be greater than 0");
         };
 
-        // Check minimum withdrawal amount (e.g., 0.01 ICP = 10_000 e8s)
-        if (amount < 10_000) {
-            return #err("Withdrawal amount must be at least 0.01 ICP");
+        // 1 ICP = 100000000 e8s
+        // Check minimum withdrawal amount (e.g., 0.0001 ICP = 10_000 e8s)
+        if (amount < 10000) {
+            return #err("Withdrawal amount must be at least 0.0001 ICP");
         };
 
         // Check maximum withdrawal amount
-        let maxWithdrawal : Nat = 1_000_000_000_000; // 10,000 ICP
+        let maxWithdrawal : Nat = 1000000000000; // 10,000 ICP
         if (amount > maxWithdrawal) {
             return #err("Withdrawal amount exceeds maximum limit");
         };
@@ -85,6 +86,7 @@ module TransactionService {
                     from = userId;
                     to = userId;
                     amount = amount;
+                    quantity = 1;
                     transactionType = #withdrawal;
                     txStatus = #pending;
                     eventId = null;

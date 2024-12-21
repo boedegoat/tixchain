@@ -34,3 +34,20 @@ Or you can deploy both at the same time by running:
 ```bash
 npm run deploy
 ```
+
+## Transfer ICP From Ledger to User Wallet
+
+Check the balance of the ledger account:
+
+```bash
+dfx ledger balance $(dfx ledger account-id)
+```
+
+Transfer ICP from the ledger account to the user wallet:
+
+```bash
+dfx ledger transfer --amount AMOUNT_IN_ICP --memo 0 RECEIVER_ACCOUNT_ID
+```
+
+> **Note**
+> RECEIVER_ACCOUNT_ID is basically the user deposit address
