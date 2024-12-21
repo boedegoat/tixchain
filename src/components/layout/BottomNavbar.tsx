@@ -7,6 +7,7 @@ import HomeIcon from '@/assets/icons/home.svg'
 import EventsIcon from '@/assets/icons/events.svg'
 import CreateIcon from '@/assets/icons/create.svg'
 import TicketIcon from '@/assets/icons/smallTicket.svg'
+import ResoldIcon from '@/assets/icons/resold.svg'
 import ProfileIcon from '@/assets/icons/profile.svg'
 import { usePathname } from 'next/navigation'
 
@@ -29,7 +30,12 @@ const links = [
 	{
 		href: '/tickets',
 		icon: TicketIcon,
-		label: 'Tickets',
+		label: 'My Tickets',
+	},
+	{
+		href: '/resolds',
+		icon: ResoldIcon,
+		label: 'Resold',
 	},
 	{
 		href: '/profile',
