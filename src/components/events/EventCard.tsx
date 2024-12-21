@@ -2,18 +2,18 @@
 
 import CalendarIcon from '@/assets/icons/calendar.svg'
 import LocationIcon from '@/assets/icons/location.svg'
-import { Event, MyEvent } from '@/declarations/backend/backend.did'
-import { convertE8sToICP } from '@/lib/utils'
-import { useState } from 'react'
+import { Event, MyCreatedEvent, MyEvent } from '@/declarations/backend/backend.did'
+import { convertE8sToICP, convertICPToE8s } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog'
-import { Button } from '../ui/button'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -25,16 +25,57 @@ import {
 	AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Badge } from '../ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { useQueryCall } from '@/lib/actor'
+import { UserIcon, UsersIcon } from 'lucide-react'
+import CoinIcon from '@/assets/icons/coin.svg'
 
 // definisiin prop type buat EventCards
 interface EventCardsProps {
-	event: Event | MyEvent
+	event: Event | MyEvent | MyCreatedEvent
 	onBuyTicket?: (eventId: string, quantity: bigint) => Promise<void>
+	onResellTicket?: (eventId: string, ticketPrice: bigint, totalTickets: bigint) => Promise<void>
+	showSeller?: boolean
 }
 
-export default function EventCard({ event, onBuyTicket }: EventCardsProps) {
+export default function EventCard({ event, onBuyTicket, onResellTicket, showSeller = true }: EventCardsProps) {
 	const [quantity, setQuantity] = useState(BigInt(1))
 	const [showDetails, setShowDetails] = useState(false)
+	const [resellTicketPrice, setResellTicketPrice] = useState(0)
+	const [resellQuantity, setResellQuantity] = useState(BigInt(0))
+	const [sellerUsername, setSellerUsername] = useState('')
+	const [originalSellerUsername, setOriginalSellerUsername] = useState('')
+	const { loading: usernameLoading, call: getUsernameById } = useQueryCall({
+		functionName: 'getUsernameById',
+		args: [event.owner],
+	})
+	const { data: originalEventDetailsResponse, loading: originalEventDetailsResponseLoading } = useQueryCall({
+		functionName: 'getEventDetails',
+		args: event.originalEventId.length > 0 ? [event.originalEventId[0]!] : [''],
+	})
+
+	const originalEventDetails =
+		originalEventDetailsResponse && 'ok' in originalEventDetailsResponse ? originalEventDetailsResponse.ok : null
+
+	useEffect(() => {
+		getUsernameById([event.owner]).then((res) => {
+			if (res && 'ok' in res) {
+				setSellerUsername(res.ok)
+			}
+		})
+	}, [])
+
+	useEffect(() => {
+		if ('resell' in event.eventType && originalEventDetails) {
+			getUsernameById([originalEventDetails.owner]).then((res) => {
+				if (res && 'ok' in res) {
+					setOriginalSellerUsername(res.ok)
+				}
+			})
+		}
+	}, [originalEventDetails])
 
 	return (
 		<div className='bg-[#131313] min-w-[367px] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition border border-[#fff] flex flex-col'>
@@ -55,6 +96,34 @@ export default function EventCard({ event, onBuyTicket }: EventCardsProps) {
 					<LocationIcon className='mr-2' />
 					{event.location}
 				</p>
+				{showSeller && (
+					<>
+						<p className='text-gray-400 text-xs sm:text-sm flex items-center'>
+							<UserIcon className='mr-2 w-4 h-4 text-white' />
+							{'resell' in event.eventType ? 'Reseller' : 'Seller'}:{' '}
+							{usernameLoading ? 'loading...' : sellerUsername}
+						</p>
+						{'resell' in event.eventType && (
+							<p className='text-gray-400 text-xs sm:text-sm flex items-center'>
+								<UserIcon className='mr-2 w-4 h-4 text-white' />
+								Original seller:{' '}
+								{originalEventDetailsResponseLoading ? 'loading...' : originalSellerUsername}
+							</p>
+						)}
+					</>
+				)}
+				{'collected' in event && (
+					<p className='text-gray-400 text-xs sm:text-sm flex items-center'>
+						<CoinIcon className='mr-2 scale-75 -ml-1' />
+						<span className='-ml-0.5'>{convertE8sToICP(event.collected)} ICP Collected</span>
+					</p>
+				)}
+				{'ticketsSold' in event && (
+					<p className='text-gray-400 text-xs sm:text-sm flex items-center'>
+						<UsersIcon className='mr-2 w-[17px] h-[17px] text-white' />
+						{event.ticketsSold} tickets sold
+					</p>
+				)}
 				{onBuyTicket && (
 					<>
 						<p className='mt-[11px] font-bold text-[13px]'>
@@ -160,6 +229,76 @@ export default function EventCard({ event, onBuyTicket }: EventCardsProps) {
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>
+					)}
+
+					{onResellTicket && (
+						<Dialog>
+							<DialogTrigger asChild>
+								<button className='bg-[#84DFC2] px-4 py-2 rounded-full text-sm hover:bg-[#00d79f] transition w-28 text-black'>
+									Resell
+								</button>
+							</DialogTrigger>
+							<DialogContent className='sm:max-w-[425px]'>
+								<DialogHeader>
+									<DialogTitle
+										style={{
+											background: 'linear-gradient(90deg, #A5E5D1 0%, #5C7F74 100%)',
+											backgroundClip: 'text',
+											WebkitBackgroundClip: 'text',
+											WebkitTextFillColor: 'transparent',
+										}}
+										className='w-max font-bold'
+									>
+										Resell Ticket
+									</DialogTitle>
+								</DialogHeader>
+								<div className='grid gap-4 py-4'>
+									<div className='grid grid-cols-4 items-center gap-4'>
+										<Label htmlFor='ticketPrice' className='text-right'>
+											Price (ICP)
+										</Label>
+										<Input
+											id='ticketPrice'
+											name='ticketPrice'
+											placeholder={`Max: ${convertE8sToICP(event.resellMaxPrice)} ICP`}
+											type='number'
+											value={resellTicketPrice}
+											onChange={(e) => setResellTicketPrice(Number(e.target.value))}
+											className='col-span-3'
+										/>
+									</div>
+									<div className='grid grid-cols-4 items-center gap-4'>
+										<Label htmlFor='quantity' className='text-right'>
+											Quantity
+										</Label>
+										<Input
+											id='quantity'
+											name='quantity'
+											type='number'
+											className='col-span-3'
+											placeholder={`Max: ${(event as MyEvent).ownedTickets}`}
+											value={resellQuantity.toString()}
+											onChange={(e) => setResellQuantity(BigInt(e.target.value))}
+										/>
+									</div>
+								</div>
+								<p>
+									The event organizer has set the maximum resell price to{' '}
+									{convertE8sToICP(event.resellMaxPrice)} ICP.
+								</p>
+								<DialogFooter>
+									<Button
+										type='submit'
+										onClick={() =>
+											onResellTicket(event.id, convertICPToE8s(resellTicketPrice), resellQuantity)
+										}
+										className='w-full rounded-[10px] border border-white bg-transparent text-white hover:bg-white hover:text-black'
+									>
+										Confirm Resell
+									</Button>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
 					)}
 				</div>
 			</div>

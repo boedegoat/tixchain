@@ -46,6 +46,10 @@ module Types {
         #resell;
     };
     public type MyEvent = Event and { ownedTickets : Nat };
+    public type MyCreatedEvent = Event and {
+        ticketsSold : Nat;
+        collected : Nat;
+    };
     public type CreateNewEventData = {
         title : Text;
         description : Text;

@@ -26,7 +26,7 @@ export default function Profile() {
 		]))!
 
 		if ('err' in updateUserResult) {
-			toast.error(updateUserResult.err)
+			toast.error(updateUserResult.err, { id: toastId })
 			return
 		}
 

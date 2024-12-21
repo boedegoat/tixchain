@@ -51,6 +51,17 @@ module UserService {
         };
     };
 
+    public func getUsernameById(users : Types.Users, id : Principal) : Result.Result<Text, Text> {
+        switch (users.get(id)) {
+            case (null) {
+                return #err("User id not found");
+            };
+            case (?user) {
+                return #ok(user.username);
+            };
+        };
+    };
+
     public func updateUser(
         users : Types.Users,
         userId : Principal,

@@ -59,7 +59,7 @@ export default function ResoldPage() {
 	}
 
 	const events = eventsResponse && 'ok' in eventsResponse ? eventsResponse.ok : []
-	const resoldEvents = events.filter((event) => 'resold' in event.eventType)
+	const resoldEvents = events.filter((event) => 'resell' in event.eventType)
 
 	return (
 		<div className='container mx-auto px-6 py-4 '>

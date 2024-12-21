@@ -54,7 +54,7 @@ module EventService {
 
         // Count tickets per event
         for (ticket in tickets.vals()) {
-            if (Principal.equal(ticket.owner, caller)) {
+            if (Principal.equal(ticket.owner, caller) and ticket.isUsed == false) {
                 let count = switch (ticketCounts.get(ticket.eventId)) {
                     case (null) { 1 };
                     case (?existing) { existing + 1 };
@@ -78,6 +78,42 @@ module EventService {
         let sorted = Array.sort(
             List.toArray(eventsList),
             func(a : Types.MyEvent, b : Types.MyEvent) : Order.Order {
+                Int.compare(b.createdAt, a.createdAt);
+            },
+        );
+
+        return #ok(sorted);
+    };
+
+    public func getMyCreatedEvents(caller : Principal, events : Types.Events, tickets : Types.Tickets) : Result.Result<[Types.MyCreatedEvent], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principals are not allowed");
+        };
+
+        var eventsList = List.nil<Types.MyCreatedEvent>();
+
+        for (event in events.vals()) {
+            if (Principal.equal(event.owner, caller) and event.eventType == #new) {
+                var ticketsSold = 0;
+                for (ticket in tickets.vals()) {
+                    if (ticket.eventId == event.id) {
+                        ticketsSold += 1;
+                    };
+                };
+                eventsList := List.push(
+                    {
+                        event with
+                        ticketsSold = ticketsSold;
+                        collected = event.ticketPrice * ticketsSold;
+                    },
+                    eventsList,
+                );
+            };
+        };
+
+        let sorted = Array.sort(
+            List.toArray(eventsList),
+            func(a : Types.MyCreatedEvent, b : Types.MyCreatedEvent) : Order.Order {
                 Int.compare(b.createdAt, a.createdAt);
             },
         );
@@ -273,7 +309,7 @@ module EventService {
             };
             case (?event) {
                 if (not Principal.equal(event.owner, caller)) {
-                    return #err("Only the owner who can update this event");
+                    return #err("Only the owner who can delete this event");
                 };
 
                 switch (TicketService.getTicketsBought(events, eventId, tickets)) {
@@ -285,6 +321,7 @@ module EventService {
                         for (ticket in eventTickets.vals()) {
                             ignore UserService.updateUserBalance(users, ticket.owner, event.ticketPrice, #add);
                             ignore PlatformService.updatePlatformBalance(platformBalance, Nat.sub(event.ticketPrice, platformFee), platformFee, #sub);
+                            tickets.delete(ticket.id);
                         };
                         events.delete(eventId);
                         return #ok(());
