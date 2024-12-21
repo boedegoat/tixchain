@@ -82,21 +82,21 @@ actor TixChain {
         return await EventService.deleteEvent(caller, users, platformBalance, tickets, events, eventId);
     };
 
-    public func getEvents() : async Result.Result<[Types.Event], Text> {
+    public query func getEvents() : async Result.Result<[Types.Event], Text> {
         return EventService.getEvents(events);
     };
 
-    public func getEventDetails(eventId : Text) : async Result.Result<Types.Event, Text> {
+    public query func getEventDetails(eventId : Text) : async Result.Result<Types.Event, Text> {
         return EventService.getEventDetails(events, eventId);
     };
 
-    public shared({ caller }) func getMyEvents() : async Result.Result<[Types.Event], Text> {
+    public shared({ caller }) func getMyEvents() : async Result.Result<[Types.MyEvent], Text> {
         return EventService.getMyEvents(caller, events, tickets);
     };
 
     // === TICKETS ENDPOINT
-    public shared ({ caller }) func createBuyTicketTx(eventId: Text) : async Result.Result<Types.Transaction, Text> {
-        return await TicketService.createBuyTicketTx(caller, events, transactions, eventId);
+    public shared ({ caller }) func createBuyTicketTx(eventId: Text, quantity: Nat) : async Result.Result<Types.Transaction, Text> {
+        return await TicketService.createBuyTicketTx(caller, events, transactions, eventId, quantity);
     };
 
     public shared ({ caller }) func finalizeBuyTicketTx(

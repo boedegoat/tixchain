@@ -9,6 +9,7 @@ import Array "mo:base/Array";
 import Order "mo:base/Order";
 import Int "mo:base/Int";
 import List "mo:base/List";
+import Iter "mo:base/Iter";
 import UserService "UserService";
 import Utils "../lib/Utils";
 import PlatformService "PlatformService";
@@ -19,6 +20,7 @@ module TicketService {
         events : Types.Events,
         transactions : Types.Transactions,
         eventId : Text,
+        quantity : Nat,
     ) : async Result.Result<Types.Transaction, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
@@ -37,14 +39,19 @@ module TicketService {
                     return #err("Ticket already sold out");
                 };
 
+                if (quantity <= 0) {
+                    return #err("Invalid quantity");
+                };
+
+                let amount = event.ticketPrice * quantity;
                 let balance = await UserService.getLedgerBalance(caller);
 
-                if (balance < event.ticketPrice) {
+                if (balance < amount) {
                     return #err("Insufficient ICP balance");
                 };
 
-                var platformFee = Utils.calculatePlatformFee(event.ticketPrice);
-                let netAmount = Nat.sub(event.ticketPrice, platformFee);
+                var platformFee = Utils.calculatePlatformFee(amount);
+                let netAmount = Nat.sub(amount, platformFee);
 
                 let newTransactionId = Utils.generateUUID(caller, event.title);
                 let transactionType = switch (event.eventType) {
@@ -61,6 +68,7 @@ module TicketService {
                     from = caller;
                     to = event.owner;
                     amount = netAmount;
+                    quantity = quantity;
                     transactionType = transactionType;
                     txStatus = #pending;
                     eventId = ?event.id;
@@ -124,19 +132,21 @@ module TicketService {
                                 case (?event) {
                                     switch (transaction.transactionType) {
                                         case (#buyNewTicket) {
-                                            // create nft ticket
-                                            let newTicketId = Utils.generateUUID(caller, transaction.id);
+                                            // create nft tickets
+                                            for (i in Iter.range(0, transaction.quantity - 1)) {
+                                                let newTicketId = Utils.generateUUID(caller, transaction.id # Nat.toText(i));
 
-                                            let newTicket : Types.Ticket = {
-                                                id = newTicketId;
-                                                owner = transaction.from;
-                                                eventId = eventId;
-                                                isUsed = false;
-                                                createdAt = Time.now();
-                                                updatedAt = null;
+                                                let newTicket : Types.Ticket = {
+                                                    id = newTicketId;
+                                                    owner = transaction.from;
+                                                    eventId = eventId;
+                                                    isUsed = false;
+                                                    createdAt = Time.now();
+                                                    updatedAt = null;
+                                                };
+
+                                                tickets.put(newTicketId, newTicket);
                                             };
-
-                                            tickets.put(newTicketId, newTicket);
                                         };
                                         case (#buyResellTicket) {
                                             // change ticket ownership
@@ -150,12 +160,14 @@ module TicketService {
                                                             return #err(text);
                                                         };
                                                         case (#ok(reselledTickets)) {
-                                                            let reselledTicket = reselledTickets[0];
-                                                            let updatedTicket : Types.Ticket = {
-                                                                reselledTicket with
-                                                                owner = caller
+                                                            for (i in Iter.range(0, transaction.quantity - 1)) {
+                                                                let reselledTicket = reselledTickets[i];
+                                                                let updatedTicket : Types.Ticket = {
+                                                                    reselledTicket with
+                                                                    owner = caller
+                                                                };
+                                                                tickets.put(reselledTicket.id, updatedTicket);
                                                             };
-                                                            tickets.put(reselledTicket.id, updatedTicket);
                                                         };
                                                     };
                                                 };
@@ -176,7 +188,7 @@ module TicketService {
                                         #add,
                                     );
 
-                                    events.put(eventId, { event with availableTickets = Nat.sub(event.availableTickets, 1) });
+                                    events.put(eventId, { event with availableTickets = Nat.sub(event.availableTickets, transaction.quantity) });
                                     return #ok(updatedTransaction);
                                 };
                             };

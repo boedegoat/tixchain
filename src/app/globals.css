@@ -37,6 +37,12 @@
 		@apply border-border;
 	}
 	body {
-		@apply bg-[#181818] text-white;
+		@apply bg-[#181818] text-white overflow-x-hidden;
+	}
+
+	input[type='number']::-webkit-outer-spin-button,
+	input[type='number']::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
 	}
 }

@@ -9,6 +9,7 @@ import Buffer "mo:base/Buffer";
 import Array "mo:base/Array";
 import Order "mo:base/Order";
 import Int "mo:base/Int";
+import HashMap "mo:base/HashMap";
 import Utils "../lib/Utils";
 import TicketService "TicketService";
 import PlatformService "PlatformService";
@@ -43,36 +44,40 @@ module EventService {
         };
     };
 
-    public func getMyEvents(caller : Principal, events : Types.Events, tickets : Types.Tickets) : Result.Result<[Types.Event], Text> {
+    public func getMyEvents(caller : Principal, events : Types.Events, tickets : Types.Tickets) : Result.Result<[Types.MyEvent], Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principals are not allowed");
         };
 
-        var prevEventIds = List.nil<Text>();
-        var eventsList = List.nil<Types.Event>();
+        let ticketCounts = HashMap.HashMap<Text, Nat>(0, Text.equal, Text.hash);
+        var eventsList = List.nil<Types.MyEvent>();
 
+        // Count tickets per event
         for (ticket in tickets.vals()) {
             if (Principal.equal(ticket.owner, caller)) {
-                switch (List.find<Text>(prevEventIds, func p { p == ticket.eventId })) {
-                    case (null) {
-                        switch (events.get(ticket.eventId)) {
-                            case (null) {
-                                return #err("ticket.eventId not found");
-                            };
-                            case (?event) {
-                                eventsList := List.push(event, eventsList);
-                                prevEventIds := List.push(ticket.eventId, prevEventIds);
-                            };
-                        };
-                    };
-                    case (_) {};
+                let count = switch (ticketCounts.get(ticket.eventId)) {
+                    case (null) { 1 };
+                    case (?existing) { existing + 1 };
+                };
+                ticketCounts.put(ticket.eventId, count);
+            };
+        };
+
+        // Create events list with counts
+        for ((eventId, count) in ticketCounts.entries()) {
+            switch (events.get(eventId)) {
+                case (null) {
+                    return #err("eventId not found");
+                };
+                case (?event) {
+                    eventsList := List.push({ event with ownedTickets = count }, eventsList);
                 };
             };
         };
 
         let sorted = Array.sort(
             List.toArray(eventsList),
-            func(a : Types.Event, b : Types.Event) : Order.Order {
+            func(a : Types.MyEvent, b : Types.MyEvent) : Order.Order {
                 Int.compare(b.createdAt, a.createdAt);
             },
         );
@@ -94,8 +99,6 @@ module EventService {
             description;
             date;
             location;
-            startsAt;
-            endsAt;
             ticketPrice;
             totalTickets;
             imageUrl;
@@ -132,8 +135,6 @@ module EventService {
             description = description;
             date = date;
             location = location;
-            startsAt = startsAt;
-            endsAt = endsAt;
             ticketPrice = ticketPrice;
             totalTickets = totalTickets;
             availableTickets = totalTickets;

@@ -30,8 +30,6 @@ module Types {
         title : Text;
         description : Text;
         date : Text;
-        startsAt : Int;
-        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
@@ -47,23 +45,11 @@ module Types {
         #new;
         #resell;
     };
-    public type ReselledEvents = HashMap.HashMap<Text, ReselledEvent>;
-    public type ReselledEvent = {
-        id : Text;
-        eventId : Text;
-        owner : Principal;
-        ticketPrice : Nat;
-        totalTickets : Nat;
-        availableTickets : Nat;
-        createdAt : Int;
-        updatedAt : ?Int;
-    };
+    public type MyEvent = Event and { ownedTickets : Nat };
     public type CreateNewEventData = {
         title : Text;
         description : Text;
         date : Text;
-        startsAt : Int;
-        endsAt : ?Int;
         location : Text;
         ticketPrice : Nat;
         totalTickets : Nat;
@@ -104,6 +90,7 @@ module Types {
         from : Principal;
         to : Principal;
         amount : Nat;
+        quantity : Nat;
         transactionType : TransactionType;
         txStatus : TxStatus;
         eventId : ?Text;

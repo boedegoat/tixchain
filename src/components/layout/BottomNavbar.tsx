@@ -22,7 +22,7 @@ const links = [
 		label: 'Events',
 	},
 	{
-		href: 'events/create',
+		href: '/events/create',
 		icon: CreateIcon,
 		label: 'Create',
 	},

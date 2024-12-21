@@ -4,6 +4,7 @@ import ICPAgentProvider from '@/components/icp-agent-provider'
 import { ICPActorProvider } from '@/lib/actor'
 import { dmSans } from '@/lib/font'
 import Navbar from '@/components/layout/navbar'
+import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
 	title: 'TixChain',
@@ -28,6 +29,7 @@ export default function RootLayout({
 							<Navbar />
 							{children}
 						</main>
+						<Toaster />
 					</ICPActorProvider>
 				</ICPAgentProvider>
 			</body>

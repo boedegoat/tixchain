@@ -1,40 +1,35 @@
 'use client'
 
-import { useQueryCall, useUpdateCall } from '@/lib/actor'
-import { generateImageFromUsername, generateUsernameFromId, getUserDepositAddress } from '@/lib/utils'
-import { useAuth } from '@ic-reactor/react'
+import { useQueryCall } from '@/lib/actor'
 import Link from 'next/link'
 import { Avatar, AvatarImage } from '../ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ChevronDown, LogInIcon, LogOut, User } from 'lucide-react'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChevronDown, CopyIcon, LogInIcon, LogOut, User } from 'lucide-react'
 import { Button } from '../ui/button'
-import { useRouter } from 'next/navigation'
+import useAuthConfigured from '@/hooks/use-auth-configured'
+import { convertE8sToICP, truncateAddress } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import toast from 'react-hot-toast'
+import useUser from '@/hooks/use-user'
 
 export default function Navbar() {
-	const { call: whoami } = useUpdateCall({
-		functionName: 'whoami',
-	})
-	const { data: user, loading: userLoading } = useQueryCall({
-		functionName: 'whoami',
+	const { user, userLoading } = useUser()
+	const { data: ledgerBalance } = useQueryCall({
+		functionName: 'getLedgerBalance',
 		refetchOnMount: true,
 	})
-	const router = useRouter()
-
-	const { login, logout, authenticating, authenticated } = useAuth({
-		async onLoginSuccess(principal) {
-			const username = generateUsernameFromId(principal.toText())
-			const depositAddress = getUserDepositAddress(principal)
-			const image = generateImageFromUsername(username)
-			const result = await authenticateUser([username, depositAddress, image])
-			if (result && 'ok' in result) {
-				whoami()
-				router.push('/home')
-			}
-		},
+	const { data: appBalance } = useQueryCall({
+		functionName: 'getAppBalance',
+		refetchOnMount: true,
 	})
-	const { call: authenticateUser } = useUpdateCall({
-		functionName: 'authenticateUser',
-	})
+	const { login, logout, authenticating, authenticated, depositAddress } = useAuthConfigured()
 
 	return (
 		<>
@@ -65,15 +60,50 @@ export default function Navbar() {
 										) : (
 											<>
 												<Avatar className='w-7 h-7 mr-1'>
-													<AvatarImage src={user?.[0]?.imageUrl} />
+													<AvatarImage src={user?.imageUrl} />
 												</Avatar>
-												<p>{user?.[0]?.username}</p>
+												<p>{user?.username}</p>
 												<ChevronDown />
 											</>
 										)}
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align='center'>
+								<DropdownMenuContent align='end'>
+									<DropdownMenuLabel>
+										<div>
+											<div className='mt-2'>
+												<div>{convertE8sToICP(ledgerBalance ?? BigInt(0))} ICP</div>
+
+												<div className='text-sm text-muted-foreground'>
+													Deposit Address:{' '}
+													<TooltipProvider>
+														<Tooltip>
+															<TooltipTrigger asChild>
+																<button
+																	onClick={() => {
+																		navigator.clipboard.writeText(depositAddress)
+																		toast.success('Deposit address copied')
+																	}}
+																	className='inline-flex items-center gap-1 rounded-md hover:bg-muted p-0.5'
+																>
+																	{truncateAddress(depositAddress)}{' '}
+																	<CopyIcon className='w-3 h-3' />
+																</button>
+															</TooltipTrigger>
+															<TooltipContent>
+																<p>Copy Address</p>
+															</TooltipContent>
+														</Tooltip>
+													</TooltipProvider>
+												</div>
+											</div>
+											<Button size={'sm'} variant={'outline'} className='w-full mt-2 text-[10px]'>
+												Withdraw {appBalance && <div>{convertE8sToICP(appBalance)} ICP</div>}{' '}
+												ICP from App Balance
+											</Button>
+										</div>
+									</DropdownMenuLabel>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem>
 										<User /> Profile
 									</DropdownMenuItem>

@@ -15,8 +15,8 @@ module Utils {
         return Nat32.toText(finalHash);
     };
 
-    // calculate 2.5% platform fee
+    // calculate 5% platform fee
     public func calculatePlatformFee(amount : Nat) : Nat {
-        return (amount * 25) / 1000;
+        return (amount * 5) / 1000;
     };
 };
