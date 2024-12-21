@@ -17,17 +17,10 @@ import useAuthConfigured from '@/hooks/use-auth-configured'
 import { convertE8sToICP, truncateAddress } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import toast from 'react-hot-toast'
-import { useEffect } from 'react'
+import useUser from '@/hooks/use-user'
 
 export default function Navbar() {
-	const {
-		data: user,
-		loading: userLoading,
-		refetch: refetchWhoami,
-	} = useQueryCall({
-		functionName: 'whoami',
-		refetchOnMount: true,
-	})
+	const { user, userLoading } = useUser()
 	const { data: ledgerBalance } = useQueryCall({
 		functionName: 'getLedgerBalance',
 		refetchOnMount: true,
@@ -37,12 +30,6 @@ export default function Navbar() {
 		refetchOnMount: true,
 	})
 	const { login, logout, authenticating, authenticated, depositAddress } = useAuthConfigured()
-
-	useEffect(() => {
-		if (!user) {
-			refetchWhoami()
-		}
-	}, [user])
 
 	return (
 		<>
@@ -73,9 +60,9 @@ export default function Navbar() {
 										) : (
 											<>
 												<Avatar className='w-7 h-7 mr-1'>
-													<AvatarImage src={user?.[0]?.imageUrl} />
+													<AvatarImage src={user?.imageUrl} />
 												</Avatar>
-												<p>{user?.[0]?.username}</p>
+												<p>{user?.username}</p>
 												<ChevronDown />
 											</>
 										)}

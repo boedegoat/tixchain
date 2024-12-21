@@ -90,7 +90,7 @@ actor TixChain {
         return EventService.getEventDetails(events, eventId);
     };
 
-    public shared({ caller }) func getMyEvents() : async Result.Result<[Types.Event], Text> {
+    public shared({ caller }) func getMyEvents() : async Result.Result<[Types.MyEvent], Text> {
         return EventService.getMyEvents(caller, events, tickets);
     };
 
